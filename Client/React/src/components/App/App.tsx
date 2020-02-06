@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { PacketList } from '../PacketList/PacketList';
 
 const sock = new WebSocket('ws://127.0.0.1:8080');
 
@@ -27,20 +28,7 @@ export const App = () => {
   return (
     <div className='App'>
       <button onClick={onClick}>send</button>
-      <table className='PacketList'>
-        <thead className='PacketListHeader'>
-          <tr>
-            <td>パケット一覧</td>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item, i) => (
-            <tr className='PacketListItem'>
-              <td key={i}>{item}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <PacketList packets={items} />
     </div>
   );
 };
