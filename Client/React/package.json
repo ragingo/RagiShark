@@ -1,0 +1,49 @@
+{
+  "name": "ragishark-viewer",
+  "description": "tshark monitor",
+  "version": "0.1.0",
+  "author": "ragingo",
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": {
+    "start": "yarn start:dev",
+    "start:dev": "webpack-dev-server --config conf/webpack.dev.js",
+    "start:prod": "webpack-dev-server --compress --config conf/webpack.prod.js",
+    "build": "yarn build:prod",
+    "build:dev": "webpack --progress --config conf/webpack.dev.js",
+    "build:prod": "webpack --progress --config conf/webpack.prod.js",
+    "prebuild:dev": "yarn run clean && yarn run sass:dev",
+    "prebuild:prod": "yarn run clean && yarn run sass:prod",
+    "sass:dev": "node-sass ./src/index.scss --output-style expanded --output ./dist/",
+    "sass:prod": "node-sass ./src/index.scss --output-style compressed --output ./dist/",
+    "lint": "tslint -c conf/tslint.jsonc --fix --force './src/**/*.{ts,tsx}'",
+    "clean": "rimraf dist && mkdir dist && touch dist/.gitkeep"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "devDependencies": {
+    "@types/react": "^16.9.19",
+    "@types/react-dom": "^16.9.5",
+    "clean-webpack-plugin": "^3.0.0",
+    "copy-webpack-plugin": "^5.1.1",
+    "css-loader": "^3.4.2",
+    "html-loader": "^0.5.5",
+    "node-sass": "^4.13.1",
+    "rimraf": "^3.0.1",
+    "sass-loader": "^8.0.2",
+    "terser-webpack-plugin": "^2.3.4",
+    "ts-loader": "^6.2.1",
+    "typescript": "^3.8.0-beta",
+    "webpack": "^4.41.5",
+    "webpack-dev-server": "^3.10.3",
+    "webpack-merge": "^4.2.2",
+    "webpackbar": "^4.0.0"
+  },
+  "dependencies": {
+    "@material-ui/core": "^4.9.1",
+    "@material-ui/icons": "^4.9.1",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0"
+  }
+}
