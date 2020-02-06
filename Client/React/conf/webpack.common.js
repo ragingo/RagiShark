@@ -45,7 +45,7 @@ module.exports = {
     contentBase: getFullPath('src'),
     hot: true,
     open: true,
-    port: 8080,
+    port: 3001,
     progress: true,
     stats: {
       normal: true
