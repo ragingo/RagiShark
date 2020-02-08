@@ -24,6 +24,8 @@ namespace RagiSharkServerCS
         private NetworkStream _stream;
         private readonly ConcurrentQueue<string> _sendQueue = new ConcurrentQueue<string>();
 
+        public event Action<string> TextDataReceived;
+
         public WebSocketServer()
         {
         }
@@ -97,7 +99,7 @@ namespace RagiSharkServerCS
             }
         }
 
-        private void OnDataReceived(Span<byte> span)
+        private void OnDataReceived(ReadOnlySpan<byte> span)
         {
             string data = Encoding.UTF8.GetString(span);
 
@@ -136,10 +138,10 @@ namespace RagiSharkServerCS
             // await _stream.FlushAsync().ConfigureAwait(false);
         }
 
-        private void OnDataFrameReceived(Span<byte> span)
+        private void OnDataFrameReceived(ReadOnlySpan<byte> span)
         {
-            Console.WriteLine("--------------------------------------------------");
-            Console.WriteLine(string.Join(" ", span.ToArray().Select(x => x.ToString("X2"))));
+            // Console.WriteLine("--------------------------------------------------");
+            // Console.WriteLine(string.Join(" ", span.ToArray().Select(x => x.ToString("X2"))));
 
             var header = WebSocketHeader.Parse(span);
             Console.WriteLine(header);
@@ -156,30 +158,14 @@ namespace RagiSharkServerCS
             }
         }
 
-        private void OnTextFrameReceived(Span<byte> span, WebSocketHeader header)
+        private void OnTextFrameReceived(ReadOnlySpan<byte> span, WebSocketHeader header)
         {
             if (header.PayloadLength <= 125)
             {
                 if (header.Mask)
                 {
-                    var decodedValues = new List<byte>();
-
-                    const int maskingKeyOffset = 2;
-                    const int maskingKeyLength = 4;
-                    var maskingKey = span.Slice(maskingKeyOffset, maskingKeyLength);
-
-                    const int dataOffset = maskingKeyOffset + maskingKeyLength;
-                    var data = span.Slice(dataOffset);
-
-                    for (int i = 0; i < data.Length; i++)
-                    {
-                        byte e = data[i];
-                        byte m = maskingKey[i % 4];
-                        decodedValues.Add((byte)(e ^ m));
-                    }
-
-                    Console.WriteLine($"decoded (hex): {string.Join(" ", decodedValues.Select(x => x.ToString("X2")))}");
-                    Console.WriteLine($"decoded (str): {Encoding.UTF8.GetString(decodedValues.ToArray())}");
+                    string text = DecodeText(span);
+                    TextDataReceived?.Invoke(text);
                 }
             }
             else if (header.PayloadLength == 126)
@@ -218,5 +204,23 @@ namespace RagiSharkServerCS
             await _stream.WriteAsync(arr, 0, arr.Length).ConfigureAwait(false);
         }
 
+        private static string DecodeText(ReadOnlySpan<byte> span)
+        {
+            const int maskingKeyOffset = 2;
+            const int maskingKeyLength = 4;
+            var maskingKey = span.Slice(maskingKeyOffset, maskingKeyLength);
+
+            const int dataOffset = maskingKeyOffset + maskingKeyLength;
+            var data = span.Slice(dataOffset);
+
+            var bytes = new byte[data.Length];
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                bytes[i] = (byte)(data[i] ^ maskingKey[i % 4]);
+            }
+
+            return Encoding.UTF8.GetString(bytes);
+        }
     }
 }

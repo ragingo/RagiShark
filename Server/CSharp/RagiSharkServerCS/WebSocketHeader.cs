@@ -12,7 +12,7 @@ namespace RagiSharkServerCS
         public bool Mask;
         public int PayloadLength;
 
-        public static WebSocketHeader Parse(Span<byte> span)
+        public static WebSocketHeader Parse(ReadOnlySpan<byte> span)
         {
             var header = new WebSocketHeader();
             if (span.Length < 2)

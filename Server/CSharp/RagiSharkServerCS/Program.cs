@@ -13,6 +13,7 @@ namespace RagiSharkServerCS
         private static int _listenPort = -1;
         private static int _captureInterface = -1;
         private static string _captureFilter = "";
+        private static bool _sendable = true;
 
         private static async Task Main(string[] args)
         {
@@ -57,8 +58,24 @@ namespace RagiSharkServerCS
             }
 
             var ws = new WebSocketServer();
+            ws.TextDataReceived += OnTextDataReceived;
             _ = Task.Run(Work(ws)).ConfigureAwait(false);
             await ws.Listen(IPAddress.Parse(_listenIPAddress), _listenPort).ConfigureAwait(false);
+        }
+
+        private static void OnTextDataReceived(string text)
+        {
+            Console.WriteLine($"received: {text}");
+
+            switch (text)
+            {
+                case "pause":
+                    _sendable = false;
+                    break;
+                case "resume":
+                    _sendable = true;
+                    break;
+            }
         }
 
         private static Tuple<string, string> GetToolInfo()
@@ -113,14 +130,16 @@ namespace RagiSharkServerCS
                 {
                     if (reader.EndOfStream)
                     {
-                        await Task.Delay(100).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    if (!_sendable)
+                    {
                         continue;
                     }
 
                     string line = await reader.ReadLineAsync().ConfigureAwait(false);
                     ws.PushMessage(line);
-
-                    await Task.Delay(50).ConfigureAwait(false);
                 }
             };
         }

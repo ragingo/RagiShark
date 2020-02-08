@@ -21,13 +21,18 @@ export const App = () => {
     setItems(oldItems => [...oldItems, newItem]);
   }, [items]);
 
-  const onClick = useCallback(() => {
-    sock.send('test!');
+  const onPauseClick = useCallback(() => {
+    sock.send('pause');
+  }, []);
+
+  const onResumeClick = useCallback(() => {
+    sock.send('resume');
   }, []);
 
   return (
     <div className='App'>
-      <button onClick={onClick}>send</button>
+      <button onClick={onPauseClick}>pause</button>
+      <button onClick={onResumeClick}>resume</button>
       <PacketList packets={items} />
     </div>
   );
