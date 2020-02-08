@@ -118,7 +118,7 @@ namespace RagiSharkServerCS
                     }
 
                     string line = await reader.ReadLineAsync().ConfigureAwait(false);
-                    ws.SendMessage(line);
+                    ws.PushMessage(line);
 
                     await Task.Delay(50).ConfigureAwait(false);
                 }

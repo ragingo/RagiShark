@@ -1,3 +1,5 @@
+using System;
+
 namespace RagiSharkServerCS
 {
     struct WebSocketHeader
@@ -10,13 +12,15 @@ namespace RagiSharkServerCS
         public bool Mask;
         public int PayloadLength;
 
-        public static WebSocketHeader Parse(byte[] bytes)
+        public static WebSocketHeader Parse(Span<byte> span)
         {
             var header = new WebSocketHeader();
-            if (bytes == null || bytes.Length < 2)
+            if (span.Length < 2)
             {
                 return header;
             }
+
+            byte[] bytes = span.Slice(0, 2).ToArray();
 
             header.Fin = (bytes[0] >> 7) == 1;
             header.Rcv1 = (byte)(bytes[0] >> 6 & 1);

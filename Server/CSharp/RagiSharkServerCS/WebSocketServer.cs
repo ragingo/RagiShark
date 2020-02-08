@@ -36,7 +36,7 @@ namespace RagiSharkServerCS
             await Process().ConfigureAwait(false);
         }
 
-        public void SendMessage(string msg)
+        public void PushMessage(string msg)
         {
             if (_stream == null)
             {
@@ -88,7 +88,7 @@ namespace RagiSharkServerCS
                         continue;
                     }
 
-                    OnDataReceived(buf);
+                    OnDataReceived(buf.AsSpan());
                 }
                 catch (IOException e) when (e.InnerException is SocketException)
                 {
@@ -97,9 +97,9 @@ namespace RagiSharkServerCS
             }
         }
 
-        private void OnDataReceived(byte[] buf)
+        private void OnDataReceived(Span<byte> span)
         {
-            string data = Encoding.UTF8.GetString(buf);
+            string data = Encoding.UTF8.GetString(span);
 
             if (data.StartsWith("GET"))
             {
@@ -107,7 +107,7 @@ namespace RagiSharkServerCS
             }
             else
             {
-                OnDataFrameReceived(buf);
+                OnDataFrameReceived(span);
             }
         }
 
@@ -133,21 +133,21 @@ namespace RagiSharkServerCS
 
             byte[] res = Encoding.UTF8.GetBytes(sb.ToString());
             await _stream.WriteAsync(res, 0, res.Length).ConfigureAwait(false);
-            await _stream.FlushAsync().ConfigureAwait(false);
+            // await _stream.FlushAsync().ConfigureAwait(false);
         }
 
-        private void OnDataFrameReceived(byte[] buf)
+        private void OnDataFrameReceived(Span<byte> span)
         {
             Console.WriteLine("--------------------------------------------------");
-            Console.WriteLine(string.Join(" ", buf.Select(x => x.ToString("X2"))));
+            Console.WriteLine(string.Join(" ", span.ToArray().Select(x => x.ToString("X2"))));
 
-            var header = WebSocketHeader.Parse(buf);
+            var header = WebSocketHeader.Parse(span);
             Console.WriteLine(header);
 
             switch (header.OpCode)
             {
                 case OpCode.Text:
-                    OnTextFrameReceived(buf, header);
+                    OnTextFrameReceived(span, header);
                     break;
 
                 case OpCode.Close:
@@ -156,20 +156,28 @@ namespace RagiSharkServerCS
             }
         }
 
-        private void OnTextFrameReceived(byte[] buf, WebSocketHeader header)
+        private void OnTextFrameReceived(Span<byte> span, WebSocketHeader header)
         {
             if (header.PayloadLength <= 125)
             {
                 if (header.Mask)
                 {
                     var decodedValues = new List<byte>();
-                    byte[] maskKey = new[] { buf[2], buf[3], buf[4], buf[5] }; // TODO: span slice でもっと見やすく
-                    for (int i = 6; i < buf.Length; i++)
+
+                    const int maskingKeyOffset = 2;
+                    const int maskingKeyLength = 4;
+                    var maskingKey = span.Slice(maskingKeyOffset, maskingKeyLength);
+
+                    const int dataOffset = maskingKeyOffset + maskingKeyLength;
+                    var data = span.Slice(dataOffset);
+
+                    for (int i = 0; i < data.Length; i++)
                     {
-                        byte e = buf[i];
-                        byte m = maskKey[(i - 6) % 4];
+                        byte e = data[i];
+                        byte m = maskingKey[i % 4];
                         decodedValues.Add((byte)(e ^ m));
                     }
+
                     Console.WriteLine($"decoded (hex): {string.Join(" ", decodedValues.Select(x => x.ToString("X2")))}");
                     Console.WriteLine($"decoded (str): {Encoding.UTF8.GetString(decodedValues.ToArray())}");
                 }

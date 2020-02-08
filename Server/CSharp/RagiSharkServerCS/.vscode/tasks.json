@@ -9,7 +9,7 @@
                 "build",
                 "${workspaceFolder}/RagiSharkServerCS.csproj",
                 "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary"
+                "/consoleloggerparameters:PerformanceSummary;SummaryShowCommandLine;ShowTimestamp"
             ],
             "problemMatcher": "$msCompile"
         },
