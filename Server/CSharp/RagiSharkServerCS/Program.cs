@@ -7,60 +7,72 @@ using System.Text.RegularExpressions;
 
 namespace RagiSharkServerCS
 {
+    class AppConfig
+    {
+        public string ListenIPAddress { get; set; }
+        public int ListenPort { get; set; }
+        public int CaptureInterface { get; set; }
+        public string CaptureFilter { get; set; }
+    }
+
     class Program
     {
-        private static string _listenIPAddress = "";
-        private static int _listenPort = -1;
-        private static int _captureInterface = -1;
-        private static string _captureFilter = "";
         private static bool _sendable = true;
 
         private static async Task Main(string[] args)
         {
             Console.WriteLine($"args: {string.Join(", ", args)}");
 
-            for (int i = 0; i < args.Length; i++)
+            var config = ParseCommandLineArgs(args);
+
+            var ws = new WebSocketServer();
+            ws.TextDataReceived += OnTextDataReceived;
+            _ = Task.Run(Work(ws, config)).ConfigureAwait(false);
+            await ws.Listen(IPAddress.Parse(config.ListenIPAddress), config.ListenPort).ConfigureAwait(false);
+        }
+
+        private static AppConfig ParseCommandLineArgs(string[] args)
+        {
+            var defs = new [] {
+                new CommandLineArgDefinition {
+                    Keys = new [] { "-l", "--listen-addr" },
+                    Converter = x => Regex.IsMatch(x, @"\d+\.\d+\.\d+\.\d+") ? x : "127.0.0.1"
+                },
+                new CommandLineArgDefinition {
+                    Keys = new [] { "-p", "--listen-port" },
+                    Converter = x => int.TryParse(x, out int value) ? value : -1
+                },
+                new CommandLineArgDefinition {
+                    Keys = new [] { "-i", "--capture-interface" },
+                    Converter = x => int.TryParse(x, out int value) ? value : -1
+                },
+                new CommandLineArgDefinition {
+                    Keys = new [] { "-f", "--capture-filter" }
+                },
+            };
+
+            var config = new AppConfig();
+
+            foreach (var arg in CommandLineParser.Parse(args, defs))
             {
-                string arg = args[i];
-                bool hasNext = i + 1 < args.Length;
-                switch (arg)
+                switch (arg.Key)
                 {
-                    case "-l" when hasNext && Regex.IsMatch(args[i + 1], @"\d+\.\d+\.\d+\.\d+"):
-                        _listenIPAddress = args[i + 1];
-                        i++;
+                    case "-l":
+                        config.ListenIPAddress = arg.Value as string;
                         break;
-                    case "-p" when hasNext && int.TryParse(args[i + 1], out int port):
-                        _listenPort = port;
-                        i++;
+                    case "-p":
+                        config.ListenPort = arg.Value is int p ? p : -1;
                         break;
-                    case "-i" when hasNext && int.TryParse(args[i + 1], out int nicNumber):
-                        _captureInterface = nicNumber;
-                        i++;
+                    case "-i":
+                        config.CaptureInterface = arg.Value is int i ? i : -1;
                         break;
-                    case "-f" when hasNext:
-                        _captureFilter = args[i + 1];
-                        i++;
-                        break;
-                    default:
+                    case "-f":
+                        config.CaptureFilter = arg.Value as string;
                         break;
                 }
             }
 
-            if (string.IsNullOrEmpty(_listenIPAddress))
-            {
-                _listenIPAddress = "127.0.0.1";
-            }
-
-            if (_listenPort <= 0)
-            {
-                Console.WriteLine("-p !");
-                return;
-            }
-
-            var ws = new WebSocketServer();
-            ws.TextDataReceived += OnTextDataReceived;
-            _ = Task.Run(Work(ws)).ConfigureAwait(false);
-            await ws.Listen(IPAddress.Parse(_listenIPAddress), _listenPort).ConfigureAwait(false);
+            return config;
         }
 
         private static void OnTextDataReceived(string text)
@@ -78,18 +90,18 @@ namespace RagiSharkServerCS
             }
         }
 
-        private static Tuple<string, string> GetToolInfo()
+        private static Tuple<string, string> GetToolInfo(AppConfig config)
         {
             string captureInterface = "";
-            if (_captureInterface > 0)
+            if (config.CaptureInterface > 0)
             {
-                captureInterface = $"-i {_captureInterface}";
+                captureInterface = $"-i {config.CaptureInterface}";
             }
 
             string captureFilter = "";
-            if (!string.IsNullOrEmpty(_captureFilter))
+            if (!string.IsNullOrEmpty(config.CaptureFilter))
             {
-                captureFilter = $@"-f ""{_captureFilter}""";
+                captureFilter = $@"-f ""{config.CaptureFilter}""";
             }
 
             string args = $"{captureInterface} {captureFilter}".Trim();
@@ -108,9 +120,9 @@ namespace RagiSharkServerCS
             }
         }
 
-        private static Func<Task> Work(WebSocketServer ws)
+        private static Process StartProcess(AppConfig config)
         {
-            var (path, args) = GetToolInfo();
+            var (path, args) = GetToolInfo(config);
             Console.WriteLine($"tshark path: {path}");
             Console.WriteLine($"tshark args: {args}");
 
@@ -121,7 +133,28 @@ namespace RagiSharkServerCS
             psi.RedirectStandardInput = false;
             psi.CreateNoWindow = false;
 
-            var p = Process.Start(psi);
+            Process p = null;
+
+            try
+            {
+                p = Process.Start(psi);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+            return p;
+        }
+
+        private static Func<Task> Work(WebSocketServer ws, AppConfig config)
+        {
+            var p = StartProcess(config);
+            if (p == null)
+            {
+                return () => Task.CompletedTask;
+            }
+
             var reader = p.StandardOutput;
 
             return async () =>

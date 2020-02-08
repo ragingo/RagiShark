@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -134,8 +133,14 @@ namespace RagiSharkServerCS
             sb.Append("\r\n");
 
             byte[] res = Encoding.UTF8.GetBytes(sb.ToString());
-            await _stream.WriteAsync(res, 0, res.Length).ConfigureAwait(false);
-            // await _stream.FlushAsync().ConfigureAwait(false);
+            try
+            {
+                await _stream.WriteAsync(res, 0, res.Length).ConfigureAwait(false);
+            }
+            catch (IOException e) when (e.InnerException is SocketException)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         private void OnDataFrameReceived(ReadOnlySpan<byte> span)
