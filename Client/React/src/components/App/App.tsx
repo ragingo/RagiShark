@@ -3,8 +3,16 @@ import { PacketList } from '../PacketList/PacketList';
 
 const sock = new WebSocket('ws://127.0.0.1:8080');
 
+export type MessageFormat = {
+  timestamp: string,
+  layers: {
+    ip_src: string[],
+    tcp_srcport: string[],
+  }
+};
+
 export const App = () => {
-  const [items, setItems] = useState<string[]>([]);
+  const [items, setItems] = useState<MessageFormat[]>([]);
 
   useEffect(() => {
     sock.addEventListener('open', e => {
@@ -17,7 +25,12 @@ export const App = () => {
 
   const onMessageReceived = useCallback((e: MessageEvent) => {
     console.log(e.data);
-    const newItem = e.data as string;
+    const obj = JSON.parse(e.data);
+    const keys = Object.keys(obj);
+    if (!keys.includes('layers')) {
+      return;
+    }
+    const newItem = obj as MessageFormat;
     setItems(oldItems => [...oldItems, newItem]);
   }, [items]);
 

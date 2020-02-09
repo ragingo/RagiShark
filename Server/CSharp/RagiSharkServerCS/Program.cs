@@ -4,6 +4,8 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.IO;
+using System.Text;
 
 namespace RagiSharkServerCS
 {
@@ -90,7 +92,24 @@ namespace RagiSharkServerCS
             }
         }
 
-        private static Tuple<string, string> GetToolInfo(AppConfig config)
+        private static string GetToolPath()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                string defaultPath = @"C:\Program Files\Wireshark\tshark.exe";
+                return File.Exists(defaultPath) ? defaultPath : "tshark";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return "tshark";
+            }
+            else
+            {
+                return "tshark";
+            }
+        }
+
+        private static Process StartProcess(AppConfig config)
         {
             string captureInterface = "";
             if (config.CaptureInterface > 0)
@@ -104,29 +123,17 @@ namespace RagiSharkServerCS
                 captureFilter = $@"-f ""{config.CaptureFilter}""";
             }
 
-            string args = $"{captureInterface} {captureFilter}".Trim();
+            var sb = new StringBuilder();
+            sb.Append($"{captureInterface} ");
+            sb.Append($"{captureFilter} ");
+            sb.Append("-T ek ");
+            sb.Append("-e ip.src ");
+            sb.Append("-e tcp.srcport ");
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return Tuple.Create(@"C:\Program Files\Wireshark\tshark.exe", args);
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                return Tuple.Create("tshark", args);
-            }
-            else
-            {
-                throw new NotSupportedException();
-            }
-        }
-
-        private static Process StartProcess(AppConfig config)
-        {
-            var (path, args) = GetToolInfo(config);
-            Console.WriteLine($"tshark path: {path}");
+            string args = sb.ToString().Trim();
             Console.WriteLine($"tshark args: {args}");
 
-            var psi = new ProcessStartInfo(path, args);
+            var psi = new ProcessStartInfo(GetToolPath(), args);
             psi.UseShellExecute = false;
             psi.RedirectStandardError = false;
             psi.RedirectStandardOutput = true;
