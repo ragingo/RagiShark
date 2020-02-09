@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageFormat } from '../App/App';
+import { MessageFormat } from '../WebSocketClient/WebSocketClient';
 
 type Props = {
   packets: MessageFormat[]
