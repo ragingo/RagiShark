@@ -1,17 +1,35 @@
 .PacketList {
+  $PacketList-height: 800px;
+  $PacketList-header-height: 30px;
+
   display: block;
-  width: 1200px;
-  max-height: 800px;
-  overflow-y: scroll;
-  overflow-x: hidden;
+  width: 100%;
+  height: $PacketList-height;
+  max-height: $PacketList-height;
   text-align: left;
   border: solid 1px black;
-}
 
-.PacketListHeader {
-  background-color: lightblue;
-}
+  thead {
+    height: $PacketList-header-height;
+  }
 
-.PacketListItem:hover {
-  background-color: lightyellow;
+  tbody {
+    display: block;
+    height: $PacketList-height - $PacketList-header-height;
+    overflow-y: scroll;
+    overflow-x: hidden;
+  }
+
+  td {
+    width: 200px;
+  }
+
+  .PacketListHeader {
+    background-color: lightblue;
+  }
+
+  .PacketListItem:hover {
+    background-color: lightyellow;
+  }
+
 }

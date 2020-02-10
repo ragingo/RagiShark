@@ -127,6 +127,7 @@ namespace RagiSharkServerCS
             sb.Append($"{captureInterface} ");
             sb.Append($"{captureFilter} ");
             sb.Append("-T ek ");
+            sb.Append("-e frame.number ");
             sb.Append("-e ip.src ");
             sb.Append("-e tcp.srcport ");
 

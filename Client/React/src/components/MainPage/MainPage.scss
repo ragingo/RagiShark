@@ -1,0 +1,29 @@
+.MainPage {
+
+  &-ControllerContainer {
+    display: flex;
+    flex-direction: row;
+    border: solid 1px gray;
+    padding: 4px;
+    margin-bottom: 8px;
+    width: 100%;
+  }
+
+  &-CaptureButton {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  &-CaptureFilter {
+    margin-right: 16px;
+  }
+
+  &-DisplayFilter {
+    margin-right: 16px;
+  }
+
+  &-ClientDisplayFilter {
+    margin-right: 16px;
+  }
+
+}

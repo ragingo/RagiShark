@@ -3,6 +3,7 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 export type MessageFormat = {
   timestamp: string,
   layers: {
+    frame_number: string[],
     ip_src: string[],
     tcp_srcport: string[],
   }
@@ -10,18 +11,15 @@ export type MessageFormat = {
 
 type Props = {
   url: string,
-  socketRef: React.Ref<WebSocket>,
+  socketRef: React.MutableRefObject<WebSocket>,
   onMessageReceived: (MessageFormat) => void
 };
 
 export const WebSocketClient = (
     { url, socketRef, onMessageReceived }: Props
 ) => {
-  const ref = useRef<WebSocket>(null);
-  socketRef = ref;
-
   useEffect(() => {
-    if (ref.current) {
+    if (socketRef.current) {
       return;
     }
     const sock = new WebSocket(url);
@@ -31,7 +29,7 @@ export const WebSocketClient = (
     sock.onmessage = e => {
       _onMessageReceived(e);
     };
-    ref.current = sock;
+    socketRef.current = sock;
   });
 
   const _onMessageReceived = useCallback((e: MessageEvent) => {
