@@ -51,6 +51,9 @@ const createColumnHeaders = () => {
     { label: 'No' },
     { label: '送信元IP' },
     { label: '送信元ポート' },
+    { label: '送信先IP' },
+    { label: '送信先ポート' },
+    { label: 'プロトコルNo' },
   ];
   return columns;
 };
@@ -61,6 +64,9 @@ const createColumns = (msg: MessageFormat) => {
     { value: msg.layers.frame_number },
     { value: msg.layers.ip_src },
     { value: msg.layers.tcp_srcport },
+    { value: msg.layers.ip_dst },
+    { value: msg.layers.tcp_dstport },
+    { value: msg.layers.ip_proto },
   ];
   return columns;
 };

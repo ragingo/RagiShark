@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
@@ -17,9 +18,16 @@ namespace RagiSharkServerCS
         public string CaptureFilter { get; set; }
     }
 
+    class AppState
+    {
+        public AppConfig Config { get; set; }
+        public bool Sendable { get; set; }
+        public bool Restarting { get; set; }
+    }
+
     class Program
     {
-        private static bool _sendable = true;
+        private static readonly AppState _state = new AppState();
 
         private static async Task Main(string[] args)
         {
@@ -27,9 +35,13 @@ namespace RagiSharkServerCS
 
             var config = ParseCommandLineArgs(args);
 
+            _state.Config = config;
+            _state.Restarting = false;
+            _state.Sendable = true;
+
             var ws = new WebSocketServer();
             ws.TextDataReceived += OnTextDataReceived;
-            _ = Task.Run(Work(ws, config)).ConfigureAwait(false);
+            _ = Task.Run(Work(ws)).ConfigureAwait(false);
             await ws.Listen(IPAddress.Parse(config.ListenIPAddress), config.ListenPort).ConfigureAwait(false);
         }
 
@@ -84,10 +96,16 @@ namespace RagiSharkServerCS
             switch (text)
             {
                 case "pause":
-                    _sendable = false;
+                    _state.Sendable = false;
                     break;
                 case "resume":
-                    _sendable = true;
+                    _state.Sendable = true;
+                    break;
+
+                case string s when s.StartsWith("change cf"):
+                    _state.Sendable = false;
+                    _state.Restarting = true;
+                    _state.Config.CaptureFilter = s.Replace("change cf ", "").Trim(); // TODO: かなり雑。直す。
                     break;
             }
         }
@@ -111,6 +129,24 @@ namespace RagiSharkServerCS
 
         private static Process StartProcess(AppConfig config)
         {
+            var processes = Process.GetProcessesByName("tshark");
+            foreach (var p in processes)
+            {
+                try
+                {
+                    p.Kill(true);
+                    p.Close();
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e);
+                }
+                finally
+                {
+                    p.Dispose();
+                }
+            }
+
             string captureInterface = "";
             if (config.CaptureInterface > 0)
             {
@@ -128,8 +164,11 @@ namespace RagiSharkServerCS
             sb.Append($"{captureFilter} ");
             sb.Append("-T ek ");
             sb.Append("-e frame.number ");
+            sb.Append("-e ip.proto ");
             sb.Append("-e ip.src ");
+            sb.Append("-e ip.dst ");
             sb.Append("-e tcp.srcport ");
+            sb.Append("-e tcp.dstport ");
 
             string args = sb.ToString().Trim();
             Console.WriteLine($"tshark args: {args}");
@@ -141,40 +180,48 @@ namespace RagiSharkServerCS
             psi.RedirectStandardInput = false;
             psi.CreateNoWindow = false;
 
-            Process p = null;
-
+            Process process = null;
             try
             {
-                p = Process.Start(psi);
+                process = Process.Start(psi);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
             }
 
-            return p;
+            return process;
         }
 
-        private static Func<Task> Work(WebSocketServer ws, AppConfig config)
+        private static Func<Task> Work(WebSocketServer ws)
         {
-            var p = StartProcess(config);
-            if (p == null)
-            {
-                return () => Task.CompletedTask;
-            }
-
-            var reader = p.StandardOutput;
-
             return async () =>
             {
+                Process p = null;
+
                 while (true)
                 {
+                    if (p == null || _state.Restarting)
+                    {
+                        _state.Restarting = false;
+                        _state.Sendable = true;
+
+                        p = StartProcess(_state.Config);
+                        if (p == null)
+                        {
+                            await Task.Delay(1000).ConfigureAwait(false);
+                            continue;
+                        }
+                    }
+
+                    var reader = p.StandardOutput;
+
                     if (reader.EndOfStream)
                     {
                         continue;
                     }
 
-                    if (!_sendable)
+                    if (!_state.Sendable)
                     {
                         continue;
                     }

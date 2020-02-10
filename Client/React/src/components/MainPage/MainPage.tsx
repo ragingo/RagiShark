@@ -1,10 +1,10 @@
-import { TextField } from '@material-ui/core';
+import { TextField, Button } from '@material-ui/core';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { PacketList } from '../PacketList/PacketList';
 import { MessageFormat, WebSocketClient } from '../WebSocketClient/WebSocketClient';
 
-const MAX_RENDER_PACKET_COUNT = 1000;
+const MAX_RENDER_PACKET_COUNT = 500;
 const RECEIVED_PACKET_QUEUE_CHECK_INTERVAL = 50;
 
 export const MainPage = () => {
@@ -39,6 +39,7 @@ export const MainPage = () => {
   const onCaptureStateChanged = useCallback(() => {
     setCapturing(!isCapturing);
     if (isCapturing) {
+      queue.length = 0;
       socketRef.current?.send('pause');
       setCapturing(false);
       setCaptureButtonText('resume');
@@ -61,17 +62,27 @@ export const MainPage = () => {
 
   // フォーカス外れたら反映
   const onCaptureFilterChange = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
-    setCaptureFilter(e.currentTarget?.value ?? '');
+    const value = e.currentTarget?.value ?? '';
+    setCaptureFilter(value);
+    sendCommand(socketRef, 'change cf', value);
   }, []);
 
   // フォーカス外れたら反映
   const onDisplayFilterChange = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
-    setDisplayFilter(e.currentTarget?.value ?? '');
+    const value = e.currentTarget?.value ?? '';
+    setDisplayFilter(value);
+    sendCommand(socketRef, 'change df', value);
   }, []);
 
   // リアルタイム反映
   const onClientDisplayFilterChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setClientDisplayFilter(e.currentTarget?.value ?? '');
+    const value = e.currentTarget?.value ?? '';
+    setClientDisplayFilter(value);
+  }, []);
+
+  const onClearButtonClick = useCallback(() => {
+    setPackets([]);
+    queue.length = 0;
   }, []);
 
   return (
@@ -89,9 +100,18 @@ export const MainPage = () => {
         <div className='MainPage-ClientDisplayFilter'>
           <TextField label='client display filter' defaultValue={clientDisplayFilter} onChange={onClientDisplayFilterChange} />
         </div>
+        <div className='MainPage-ClearButton'>
+          <Button onClick={onClearButtonClick} variant='contained'>Clear</Button>
+        </div>
       </div>
       <PacketList className='MainPage-PacketList' packets={packets} filter={clientDisplayFilter} />
       <WebSocketClient url={'ws://127.0.0.1:8080'} socketRef={socketRef} onMessageReceived={onMessageReceived} />
     </div>
   );
+};
+
+type WebSocketCommands = 'change cf' | 'change df';
+
+const sendCommand = (sock: React.RefObject<WebSocket>, cmd: WebSocketCommands, value: string) => {
+  sock.current?.send(`${cmd} ${value}`);
 };

@@ -7,10 +7,17 @@
   height: $PacketList-height;
   max-height: $PacketList-height;
   text-align: left;
-  border: solid 1px black;
+  outline: solid 1px black;
 
   thead {
+    display: block;
     height: $PacketList-header-height;
+
+    & > tr {
+      & > td {
+        outline: solid black 1px;
+      }
+    }
   }
 
   tbody {
@@ -18,10 +25,15 @@
     height: $PacketList-height - $PacketList-header-height;
     overflow-y: scroll;
     overflow-x: hidden;
+    & > tr {
+      & > td {
+        outline: solid lightgray 1px;
+      }
+    }
   }
 
   td {
-    width: 200px;
+    width: 150px;
   }
 
   .PacketListHeader {

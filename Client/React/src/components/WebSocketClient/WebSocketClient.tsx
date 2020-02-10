@@ -5,7 +5,10 @@ export type MessageFormat = {
   layers: {
     frame_number: string[],
     ip_src: string[],
+    ip_dst: string[],
     tcp_srcport: string[],
+    tcp_dstport: string[],
+    ip_proto: string[],
   }
 };
 
