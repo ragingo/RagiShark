@@ -32,7 +32,18 @@ module.exports = {
           }
         ]
       },
-      { test: /\.tsx?$/, exclude: /node_modules/, loader: 'ts-loader' },
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+              configFile: getFullPath('conf/babel.config.js')
+            }
+          }
+        ]
+      },
       { test: /\.html$/, exclude: getFullPath('src/index.html'), loader: 'html-loader' },
       { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader'], sideEffects: true }
     ]
