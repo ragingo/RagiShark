@@ -25,9 +25,9 @@ export const MainPage = () => {
         setPackets(oldPackets => {
           // console.log(oldPackets.length);
           if (oldPackets.length === MAX_RENDER_PACKET_COUNT) {
-            oldPackets.shift();
+            oldPackets.pop();
           }
-          return oldPackets.concat(item);
+          return [item, ...oldPackets];
         });
       }
     }, RECEIVED_PACKET_QUEUE_CHECK_INTERVAL);
