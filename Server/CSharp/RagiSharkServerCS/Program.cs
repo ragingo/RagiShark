@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using System.IO;
-using System.Text;
+using RagiSharkServerCS.TShark;
 
 namespace RagiSharkServerCS
 {
@@ -110,111 +106,32 @@ namespace RagiSharkServerCS
             }
         }
 
-        private static string GetToolPath()
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                string defaultPath = @"C:\Program Files\Wireshark\tshark.exe";
-                return File.Exists(defaultPath) ? defaultPath : "tshark";
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                return "tshark";
-            }
-            else
-            {
-                return "tshark";
-            }
-        }
-
-        private static Process StartProcess(AppConfig config)
-        {
-            var processes = Process.GetProcessesByName("tshark");
-            foreach (var p in processes)
-            {
-                try
-                {
-                    p.Kill(true);
-                    p.Close();
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine(e);
-                }
-                finally
-                {
-                    p.Dispose();
-                }
-            }
-
-            string captureInterface = "";
-            if (config.CaptureInterface > 0)
-            {
-                captureInterface = $"-i {config.CaptureInterface}";
-            }
-
-            string captureFilter = "";
-            if (!string.IsNullOrEmpty(config.CaptureFilter))
-            {
-                captureFilter = $@"-f ""{config.CaptureFilter}""";
-            }
-
-            var sb = new StringBuilder();
-            sb.Append($"{captureInterface} ");
-            sb.Append($"{captureFilter} ");
-            sb.Append("-T ek ");
-            sb.Append("-e frame.number ");
-            sb.Append("-e ip.proto ");
-            sb.Append("-e ip.src ");
-            sb.Append("-e ip.dst ");
-            sb.Append("-e tcp.srcport ");
-            sb.Append("-e tcp.dstport ");
-
-            string args = sb.ToString().Trim();
-            Console.WriteLine($"tshark args: {args}");
-
-            var psi = new ProcessStartInfo(GetToolPath(), args);
-            psi.UseShellExecute = false;
-            psi.RedirectStandardError = false;
-            psi.RedirectStandardOutput = true;
-            psi.RedirectStandardInput = false;
-            psi.CreateNoWindow = false;
-
-            Process process = null;
-            try
-            {
-                process = Process.Start(psi);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
-
-            return process;
-        }
-
         private static Func<Task> Work(WebSocketServer ws)
         {
             return async () =>
             {
-                Process p = null;
+                var app = new TSharkApp();
 
                 while (true)
                 {
-                    if (p == null || _state.Restarting)
+                    if (!app.IsRunning || _state.Restarting)
                     {
                         _state.Restarting = false;
                         _state.Sendable = true;
 
-                        p = StartProcess(_state.Config);
-                        if (p == null)
+                        app.Args = new TSharkAppArgs {
+                            CaptureFilter = _state.Config.CaptureFilter,
+                            CaptureInterface = new CaptureInterface { No = _state.Config.CaptureInterface },
+                        };
+                        app.Restart();
+                        if (!app.IsRunning)
                         {
                             await Task.Delay(1000).ConfigureAwait(false);
                             continue;
                         }
                     }
 
-                    var reader = p.StandardOutput;
+                    var reader = app.StandardOutput;
 
                     if (reader.EndOfStream)
                     {
