@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -21,6 +22,7 @@ namespace RagiSharkServerCS
 
         private TcpListener _listener;
         private NetworkStream _stream;
+        private bool _needsRefresh;
         private readonly ConcurrentQueue<string> _sendQueue = new ConcurrentQueue<string>();
 
         public event Action<string> TextDataReceived;
@@ -55,16 +57,14 @@ namespace RagiSharkServerCS
                 try
                 {
                     // 切断されていたら掃除
-                    if (client != null)
+                    if ((client != null && !client.Connected) || _needsRefresh)
                     {
-                        if (!client.Connected)
-                        {
-                            Console.WriteLine("client disposing...");
-                            client.Close();
-                            client.Dispose();
-                            client = null;
-                            Console.WriteLine("client disposed!");
-                        }
+                        _needsRefresh = false;
+                        Debug.WriteLine("client disposing...");
+                        client.Close();
+                        client.Dispose();
+                        client = null;
+                        Debug.WriteLine("client disposed!");
                     }
 
                     // 新たにクライアントの接続を待つ
@@ -132,7 +132,8 @@ namespace RagiSharkServerCS
             sb.Append($"Sec-WebSocket-Accept: {hashStr}\r\n");
             sb.Append("\r\n");
 
-            byte[] res = Encoding.UTF8.GetBytes(sb.ToString());
+            string s = sb.ToString();
+            byte[] res = Encoding.UTF8.GetBytes(s);
             try
             {
                 await _stream.WriteAsync(res, 0, res.Length).ConfigureAwait(false);
@@ -186,6 +187,7 @@ namespace RagiSharkServerCS
         private void OnCloseReceived()
         {
             Console.WriteLine("onClose");
+            _needsRefresh = true;
         }
 
         private async Task ProcessSendQueue()
