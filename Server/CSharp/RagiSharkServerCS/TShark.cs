@@ -94,8 +94,8 @@ namespace RagiSharkServerCS.TShark
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                // TODO: default path
-                return "tshark";
+                const string DefaultPath = "/Applications/Wireshark.app/Contents/MacOS/tshark";
+                return File.Exists(DefaultPath) ? DefaultPath : "tshark";
             }
             else
             {
