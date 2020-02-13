@@ -1,8 +1,8 @@
 import React from 'react';
-import { MessageFormat } from '../WebSocketClient/WebSocketClient';
+import { PacketMessageFormat } from '../WebSocketClient/WebSocketClient';
 
 type Props = {
-  packets: MessageFormat[],
+  packets: PacketMessageFormat[],
   filter?: string,
   className?: string
 };
@@ -34,7 +34,7 @@ export const PacketList = ({ packets, filter, className }: Props) => {
   );
 };
 
-const createPacketFilter = (msg: MessageFormat, exp: string) => {
+const createPacketFilter = (msg: PacketMessageFormat, exp: string) => {
   if (!exp || exp.length === 0) {
     return true;
   }
@@ -58,7 +58,7 @@ const createColumnHeaders = () => {
   return columns;
 };
 
-const createColumns = (msg: MessageFormat) => {
+const createColumns = (msg: PacketMessageFormat) => {
   const columns = [
     { value: msg.timestamp },
     { value: msg.layers.frame_number },

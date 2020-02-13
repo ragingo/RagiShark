@@ -1,16 +1,17 @@
-import { TextField, Button } from '@material-ui/core';
+import { Button, TextField } from '@material-ui/core';
 import ToggleButton from '@material-ui/lab/ToggleButton';
-import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PacketList } from '../PacketList/PacketList';
-import { MessageFormat, WebSocketClient } from '../WebSocketClient/WebSocketClient';
+import { MessageFormat, PacketMessageFormat, WebSocketClient, GetIFListCommandMessageFormat } from '../WebSocketClient/WebSocketClient';
 
 const MAX_RENDER_PACKET_COUNT = 500;
 const RECEIVED_PACKET_QUEUE_CHECK_INTERVAL = 50;
 
 export const MainPage = () => {
   const socketRef = useRef<WebSocket>(null);
-  const [packets, setPackets] = useState<MessageFormat[]>([]);
-  const [queue, _] = useState<MessageFormat[]>([]);
+  const [interfaces, setInterfaces] = useState<{ no: number, name: string}[]>([]);
+  const [packets, setPackets] = useState<PacketMessageFormat[]>([]);
+  const [queue, _] = useState<PacketMessageFormat[]>([]);
   const [isCapturing, setCapturing] = useState<boolean>(true);
   const [captureButtonText, setCaptureButtonText] = useState<string>('pause');
   const [captureFilter, setCaptureFilter] = useState<string>();
@@ -52,9 +53,14 @@ export const MainPage = () => {
 
   // 受信時
   const onMessageReceived = useCallback((msg: MessageFormat) => {
+    if (msg as GetIFListCommandMessageFormat) {
+      const iflist = msg as GetIFListCommandMessageFormat;
+      setInterfaces([...iflist.data]);
+      return;
+    }
     // 非キャプチャ時は、持ってても仕方ないからキューをクリア
     if (isCapturing) {
-      queue.push(msg);
+      queue.push(msg as PacketMessageFormat);
     } else {
       queue.length = 0;
     }
@@ -85,9 +91,23 @@ export const MainPage = () => {
     queue.length = 0;
   }, []);
 
+  const onGetIFListButtonClick = useCallback(() => {
+    sendCommand(socketRef, 'get if list');
+  }, []);
+
   return (
     <div className='MainPage'>
       <div className='MainPage-ControllerContainer'>
+        <div className='MainPage-GetIFListButton'>
+          <Button onClick={onGetIFListButtonClick} variant='contained'>load</Button>
+        </div>
+        <div className='MainPage-GetIFList'>
+          <select>
+            {interfaces.map(x => (
+              <option key={x.no}>{x.no} : {x.name}</option>
+            ))}
+          </select>
+        </div>
         <div className='MainPage-CaptureButton'>
           <ToggleButton selected={isCapturing} onChange={onCaptureStateChanged}>{captureButtonText}</ToggleButton>
         </div>
@@ -110,8 +130,8 @@ export const MainPage = () => {
   );
 };
 
-type WebSocketCommands = 'change cf' | 'change df';
+type WebSocketCommands = 'change cf' | 'change df' | 'get if list';
 
-const sendCommand = (sock: React.RefObject<WebSocket>, cmd: WebSocketCommands, value: string) => {
-  sock.current?.send(`${cmd} ${value}`);
+const sendCommand = (sock: React.RefObject<WebSocket>, cmd: WebSocketCommands, value?: string) => {
+  sock.current?.send(`${cmd} ${value ?? ''}`.trim());
 };

@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace RagiSharkServerCS.TShark
 {
@@ -23,9 +26,7 @@ namespace RagiSharkServerCS.TShark
         private Process _process;
 
         public TSharkAppArgs Args { get; set; }
-
         public bool IsRunning => _process != null && !_process.HasExited;
-
         public StreamReader StandardOutput => _process?.StandardOutput;
 
         public void Start()
@@ -36,7 +37,8 @@ namespace RagiSharkServerCS.TShark
             }
 
             var psi = CreateStartInfo();
-            psi.Arguments = CreateCaptureArgments(Args);
+            psi.Arguments = CreateCaptureArguments(Args);
+
             try
             {
                 _process = Process.Start(psi);
@@ -73,6 +75,46 @@ namespace RagiSharkServerCS.TShark
             }
         }
 
+        public static IEnumerable<CaptureInterface> GetInterfaceList()
+        {
+            var list = new List<CaptureInterface>();
+            var psi = CreateStartInfo();
+            psi.Arguments = CreateInterfaceListArguments();
+
+            try
+            {
+                var p = Process.Start(psi);
+                var r = new Regex(@"^(\d+)\. (.+)$", RegexOptions.Singleline | RegexOptions.Compiled);
+                while (!p.StandardOutput.EndOfStream)
+                {
+                    string line = p.StandardOutput.ReadLine();
+                    var m = r.Match(line);
+                    if (!m.Success)
+                    {
+                        continue;
+                    }
+                    if (m.Groups.Count < 3)
+                    {
+                        continue;
+                    }
+                    if (!int.TryParse(m.Groups[1].Value, out int no))
+                    {
+                        continue;
+                    }
+                    list.Add(new CaptureInterface {
+                        No = no,
+                        Name = m.Groups[2].Value
+                    });
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+            }
+            
+            return list;
+        }
+
         private static ProcessStartInfo CreateStartInfo()
         {
             var psi = new ProcessStartInfo();
@@ -102,8 +144,13 @@ namespace RagiSharkServerCS.TShark
                 return "tshark";
             }
         }
+        
+        private static string CreateInterfaceListArguments()
+        {
+            return "-D";
+        }
 
-        private static string CreateCaptureArgments(TSharkAppArgs args)
+        private static string CreateCaptureArguments(TSharkAppArgs args)
         {
             string captureInterface = "";
             if (args.CaptureInterface.No > 0)

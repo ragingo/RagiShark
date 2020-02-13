@@ -3,6 +3,8 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using RagiSharkServerCS.TShark;
+using System.Diagnostics;
+using System.Text;
 
 namespace RagiSharkServerCS
 {
@@ -19,6 +21,17 @@ namespace RagiSharkServerCS
         public AppConfig Config { get; set; }
         public bool Sendable { get; set; }
         public bool Restarting { get; set; }
+        public string ReceivedCommandRaw { get; set; }
+        public AppCommand ReceivedCommand { get; set; }
+    }
+    
+    enum AppCommand
+    {
+        Pause,
+        Resume,
+        ChangeCF,
+        ChangeDF,
+        GetIFList,
     }
 
     class Program
@@ -87,7 +100,9 @@ namespace RagiSharkServerCS
 
         private static void OnTextDataReceived(string text)
         {
-            Console.WriteLine($"received: {text}");
+            Debug.WriteLine($"received: {text}");
+            
+            _state.ReceivedCommandRaw = text;
 
             switch (text)
             {
@@ -103,6 +118,14 @@ namespace RagiSharkServerCS
                     _state.Restarting = true;
                     _state.Config.CaptureFilter = s.Replace("change cf ", "").Trim(); // TODO: かなり雑。直す。
                     break;
+
+                case "get if list":
+                    // TODO: 
+                    break;
+
+                default:
+                    Debug.WriteLine("unknown command");
+                    break;
             }
         }
 
@@ -114,6 +137,34 @@ namespace RagiSharkServerCS
 
                 while (true)
                 {
+                    // TOOD: 雑対応。直す。
+                    if (_state.ReceivedCommandRaw == "get if list")
+                    {
+                        _state.ReceivedCommandRaw = "";
+
+                        var sb = new StringBuilder();
+                        sb.Append($@" {{");
+                        sb.Append($@" ""type"": ""get_if_list_response"", ");
+                        sb.Append($@" ""data"": [ ");
+                        int i = 0;
+                        foreach (var item in TSharkApp.GetInterfaceList())
+                        {
+                            if (i > 0)
+                            {
+                                sb.Append(",");
+                            }
+                            sb.Append($@" {{ ""no"": {item.No}, ""name"": ""{item.Name}"" }}");
+                            i++;
+                        }
+                        sb.Append($@" ] ");
+                        sb.Append($@" }}");
+                        
+                        string msg = sb.ToString();
+                        Debug.WriteLine($"send msg: {msg}");
+                        ws.PushMessage(msg);
+                        continue;
+                    }
+
                     if (!app.IsRunning || _state.Restarting)
                     {
                         _state.Restarting = false;

@@ -1,6 +1,11 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 
-export type MessageFormat = {
+export type GetIFListCommandMessageFormat = {
+  type: string,
+  data: { no: number, name: string }[]
+};
+
+export type PacketMessageFormat = {
   timestamp: string,
   layers: {
     frame_number: string[],
@@ -12,10 +17,13 @@ export type MessageFormat = {
   }
 };
 
+export type MessageFormat =
+  PacketMessageFormat | GetIFListCommandMessageFormat;
+
 type Props = {
   url: string,
   socketRef: React.MutableRefObject<WebSocket>,
-  onMessageReceived: (MessageFormat) => void
+  onMessageReceived: (msg: MessageFormat) => void
 };
 
 export const WebSocketClient = (
@@ -38,10 +46,10 @@ export const WebSocketClient = (
   const _onMessageReceived = useCallback((e: MessageEvent) => {
     console.log(e.data);
     const obj = JSON.parse(e.data);
-    const keys = Object.keys(obj);
-    if (!keys.includes('layers')) {
-      return;
-    }
+    // const keys = Object.keys(obj);
+    // if (!keys.includes('layers')) {
+    //   return;
+    // }
     const newItem = obj as MessageFormat;
     onMessageReceived(newItem);
   }, []);
