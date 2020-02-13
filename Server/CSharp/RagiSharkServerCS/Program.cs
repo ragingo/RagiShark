@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Net;
-using System.Threading.Tasks;
-using System.Text.RegularExpressions;
-using RagiSharkServerCS.TShark;
 using System.Diagnostics;
+using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using RagiSharkServerCS.TShark;
 
 namespace RagiSharkServerCS
 {
@@ -24,7 +24,7 @@ namespace RagiSharkServerCS
         public string ReceivedCommandRaw { get; set; }
         public AppCommand ReceivedCommand { get; set; }
     }
-    
+
     enum AppCommand
     {
         Pause,
@@ -101,7 +101,7 @@ namespace RagiSharkServerCS
         private static void OnTextDataReceived(string text)
         {
             Debug.WriteLine($"received: {text}");
-            
+
             _state.ReceivedCommandRaw = text;
 
             switch (text)
@@ -120,7 +120,7 @@ namespace RagiSharkServerCS
                     break;
 
                 case "get if list":
-                    // TODO: 
+                    // TODO:
                     break;
 
                 default:
@@ -158,7 +158,7 @@ namespace RagiSharkServerCS
                         }
                         sb.Append($@" ] ");
                         sb.Append($@" }}");
-                        
+
                         string msg = sb.ToString();
                         Debug.WriteLine($"send msg: {msg}");
                         ws.PushMessage(msg);

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -111,7 +110,7 @@ namespace RagiSharkServerCS.TShark
             {
                 Debug.WriteLine(e);
             }
-            
+
             return list;
         }
 
@@ -144,7 +143,7 @@ namespace RagiSharkServerCS.TShark
                 return "tshark";
             }
         }
-        
+
         private static string CreateInterfaceListArguments()
         {
             return "-D";
