@@ -2,7 +2,7 @@ import { Button, TextField } from '@material-ui/core';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PacketList } from '../PacketList/PacketList';
-import { MessageFormat, PacketMessageFormat, WebSocketClient, GetIFListCommandMessageFormat } from '../WebSocketClient/WebSocketClient';
+import { MessageFormat, PacketMessageFormat, WebSocketClient, GetIFListCommandMessageFormat, isGetIFListCommandMessage, isPacketMessage } from '../WebSocketClient/WebSocketClient';
 
 const MAX_RENDER_PACKET_COUNT = 500;
 const RECEIVED_PACKET_QUEUE_CHECK_INTERVAL = 50;
@@ -53,14 +53,15 @@ export const MainPage = () => {
 
   // 受信時
   const onMessageReceived = useCallback((msg: MessageFormat) => {
-    if (msg as GetIFListCommandMessageFormat) {
-      const iflist = msg as GetIFListCommandMessageFormat;
-      setInterfaces([...iflist.data]);
+    if (isGetIFListCommandMessage(msg)) {
+      setInterfaces([...msg.data]);
       return;
     }
     // 非キャプチャ時は、持ってても仕方ないからキューをクリア
     if (isCapturing) {
-      queue.push(msg as PacketMessageFormat);
+      if (isPacketMessage(msg)) {
+        queue.push(msg);
+      }
     } else {
       queue.length = 0;
     }

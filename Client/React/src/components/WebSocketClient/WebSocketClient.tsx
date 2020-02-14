@@ -20,6 +20,21 @@ export type PacketMessageFormat = {
 export type MessageFormat =
   PacketMessageFormat | GetIFListCommandMessageFormat;
 
+export const isPacketMessage = (msg: MessageFormat): msg is PacketMessageFormat => {
+  return (msg as PacketMessageFormat).layers !== undefined;
+};
+
+export const isGetIFListCommandMessage = (msg: MessageFormat): msg is GetIFListCommandMessageFormat => {
+  const obj = msg as GetIFListCommandMessageFormat;
+  if (obj.type === undefined) {
+    return false;
+  }
+  if (obj.type !== 'get_if_list_response') {
+    return false;
+  }
+  return true;
+};
+
 type Props = {
   url: string,
   socketRef: React.MutableRefObject<WebSocket>,
