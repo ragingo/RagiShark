@@ -6,6 +6,7 @@ import { MessageFormat, PacketMessageFormat, WebSocketClient, GetIFListCommandMe
 
 const MAX_RENDER_PACKET_COUNT = 500;
 const RECEIVED_PACKET_QUEUE_CHECK_INTERVAL = 50;
+const WS_SERVER_URL = 'ws://127.0.0.1:8080';
 
 export const MainPage = () => {
   const socketRef = useRef<WebSocket>(null);
@@ -54,7 +55,8 @@ export const MainPage = () => {
   // 受信時
   const onMessageReceived = useCallback((msg: MessageFormat) => {
     if (isGetIFListCommandMessage(msg)) {
-      setInterfaces([...msg.data]);
+      const empty = { no: 0, name: '' };
+      setInterfaces([empty, ...msg.data]);
       return;
     }
     // 非キャプチャ時は、持ってても仕方ないからキューをクリア
@@ -96,6 +98,12 @@ export const MainPage = () => {
     sendCommand(socketRef, 'get if list');
   }, []);
 
+  const onIFListSelectionChanged = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedIF = interfaces[e.target.selectedIndex];
+    console.log(`selected interface: ${JSON.stringify(selectedIF)}`);
+    sendCommand(socketRef, `set if`, selectedIF.no);
+  }, [interfaces]);
+
   return (
     <div className='MainPage'>
       <div className='MainPage-ControllerContainer'>
@@ -103,9 +111,9 @@ export const MainPage = () => {
           <Button onClick={onGetIFListButtonClick} variant='contained'>load</Button>
         </div>
         <div className='MainPage-GetIFList'>
-          <select>
+          <select onChange={onIFListSelectionChanged}>
             {interfaces.map(x => (
-              <option key={x.no}>{x.no} : {x.name}</option>
+              <option key={x.no}>{x.no === 0 ? '' : `${x.no} : ${x.name}`}</option>
             ))}
           </select>
         </div>
@@ -126,12 +134,12 @@ export const MainPage = () => {
         </div>
       </div>
       <PacketList className='MainPage-PacketList' packets={packets} filter={clientDisplayFilter} />
-      <WebSocketClient url={'ws://127.0.0.1:8080'} socketRef={socketRef} onMessageReceived={onMessageReceived} />
+      <WebSocketClient url={WS_SERVER_URL} socketRef={socketRef} onMessageReceived={onMessageReceived} />
     </div>
   );
 };
 
-type WebSocketCommands = 'change cf' | 'change df' | 'get if list';
+type WebSocketCommands = 'change cf' | 'change df' | 'get if list' | 'set if';
 
 const sendCommand = (sock: React.RefObject<WebSocket>, cmd: WebSocketCommands, value?: string) => {
   sock.current?.send(`${cmd} ${value ?? ''}`.trim());

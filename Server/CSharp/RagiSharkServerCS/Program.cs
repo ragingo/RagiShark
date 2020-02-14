@@ -113,13 +113,17 @@ namespace RagiSharkServerCS
                     _state.Sendable = true;
                     break;
 
-                case string s when s.StartsWith("change cf"):
+                case string s when s.StartsWith("change cf "):
                     _state.Sendable = false;
                     _state.Restarting = true;
                     _state.Config.CaptureFilter = s.Replace("change cf ", "").Trim(); // TODO: かなり雑。直す。
                     break;
 
                 case "get if list":
+                    // TODO:
+                    break;
+                    
+                case string s when s.StartsWith("set if "):
                     // TODO:
                     break;
 
@@ -137,6 +141,20 @@ namespace RagiSharkServerCS
 
                 while (true)
                 {
+                    // TOOD: 雑対応。直す。
+                    if (_state.ReceivedCommandRaw?.StartsWith("set if ") == true)
+                    {
+                        var m = Regex.Match(_state.ReceivedCommandRaw, @"set if (\d+)");
+                        _state.ReceivedCommandRaw = "";
+
+                        if (m.Success && m.Groups.Count == 2)
+                        {
+                            if (int.TryParse(m.Groups[1].Value, out int value)) {
+                                _state.Config.CaptureInterface = value;
+                                _state.Restarting = true;
+                            }
+                        }
+                    }
                     // TOOD: 雑対応。直す。
                     if (_state.ReceivedCommandRaw == "get if list")
                     {
