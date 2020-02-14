@@ -141,6 +141,6 @@ export const MainPage = () => {
 
 type WebSocketCommands = 'change cf' | 'change df' | 'get if list' | 'set if';
 
-const sendCommand = (sock: React.RefObject<WebSocket>, cmd: WebSocketCommands, value?: string) => {
+const sendCommand = (sock: React.RefObject<WebSocket>, cmd: WebSocketCommands, value?: string | number) => {
   sock.current?.send(`${cmd} ${value ?? ''}`.trim());
 };
