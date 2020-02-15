@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -13,13 +14,13 @@ namespace RagiSharkServerCS
     {
         public string ListenIPAddress { get; set; }
         public int ListenPort { get; set; }
-        public int CaptureInterface { get; set; }
-        public string CaptureFilter { get; set; }
     }
 
     class AppState
     {
         public AppConfig Config { get; set; }
+        public int[] CaptureInterfaces { get; set; } = new int[] { };
+        public string CaptureFilter { get; set; }
         public bool Sendable { get; set; }
         public bool NeedsRestart { get; set; }
         public string ReceivedCommandRaw { get; set; }
@@ -29,12 +30,13 @@ namespace RagiSharkServerCS
     enum AppCommand
     {
         None,
+        Start,
         Pause,
         Resume,
         ChangeCF,
         ChangeDF,
         GetIFList,
-        SetIF
+        SetIFList
     }
 
     class Program
@@ -65,14 +67,7 @@ namespace RagiSharkServerCS
                 new CommandLineArgDefinition {
                     Keys = new [] { "-p", "--listen-port" },
                     Converter = x => int.TryParse(x, out int value) ? value : -1
-                },
-                new CommandLineArgDefinition {
-                    Keys = new [] { "-i", "--capture-interface" },
-                    Converter = x => int.TryParse(x, out int value) ? value : -1
-                },
-                new CommandLineArgDefinition {
-                    Keys = new [] { "-f", "--capture-filter" }
-                },
+                }
             };
 
             var config = new AppConfig();
@@ -86,12 +81,6 @@ namespace RagiSharkServerCS
                         break;
                     case "-p":
                         config.ListenPort = arg.Value is int p ? p : -1;
-                        break;
-                    case "-i":
-                        config.CaptureInterface = arg.Value is int i ? i : -1;
-                        break;
-                    case "-f":
-                        config.CaptureFilter = arg.Value as string;
                         break;
                 }
             }
@@ -107,6 +96,9 @@ namespace RagiSharkServerCS
 
             switch (text)
             {
+                case string s when s.StartsWith("start "):
+                    _state.ReceivedCommand = AppCommand.Start;
+                    break;
                 case "pause":
                     _state.ReceivedCommand = AppCommand.Pause;
                     break;
@@ -122,8 +114,8 @@ namespace RagiSharkServerCS
                     _state.ReceivedCommand = AppCommand.GetIFList;
                     break;
 
-                case string s when s.StartsWith("set if "):
-                    _state.ReceivedCommand = AppCommand.SetIF;
+                case string s when s.StartsWith("set if list "):
+                    _state.ReceivedCommand = AppCommand.SetIFList;
                     break;
 
                 default:
@@ -141,7 +133,15 @@ namespace RagiSharkServerCS
                 _state.ReceivedCommand = AppCommand.None;
                 _state.ReceivedCommandRaw = "";
 
-                if (cmd == AppCommand.Pause)
+                if (cmd == AppCommand.Start)
+                {
+                    var args = ParseStartCommandArgs(cmdRaw);
+                    _state.CaptureInterfaces = args.CaptureInterfaces;
+                    _state.CaptureFilter = args.CaptureFilter;
+                    _state.Sendable = true;
+                    _state.NeedsRestart = true;
+                }
+                else if (cmd == AppCommand.Pause)
                 {
                     _state.Sendable = false;
                 }
@@ -149,17 +149,17 @@ namespace RagiSharkServerCS
                 {
                     _state.Sendable = true;
                 }
-                else if (cmd == AppCommand.SetIF)
+                else if (cmd == AppCommand.SetIFList)
                 {
-                    if (TryParseSetIFCommand(cmdRaw, out int value))
+                    if (TryParseSetIFCommand(cmdRaw, out int[] value))
                     {
-                        _state.Config.CaptureInterface = value;
+                        _state.CaptureInterfaces = value;
                         _state.NeedsRestart = true;
                     }
                 }
                 else if (cmd == AppCommand.ChangeCF)
                 {
-                    _state.Config.CaptureFilter = cmdRaw.Replace("change cf ", "").Trim();
+                    _state.CaptureFilter = cmdRaw.Replace("change cf ", "").Trim();
                     _state.NeedsRestart = true;
                 }
                 else if (cmd == AppCommand.GetIFList)
@@ -186,15 +186,15 @@ namespace RagiSharkServerCS
 
             while (true)
             {
-                if (!app.IsRunning || _state.NeedsRestart)
+                if (_state.NeedsRestart)
                 {
                     _state.NeedsRestart = false;
                     _state.Sendable = true;
 
                     app.Args = new TSharkAppArgs
                     {
-                        CaptureFilter = _state.Config.CaptureFilter,
-                        CaptureInterface = new CaptureInterface { No = _state.Config.CaptureInterface },
+                        CaptureFilter = _state.CaptureFilter,
+                        CaptureInterfaces = _state.CaptureInterfaces.Select(x => new CaptureInterface { No = x }).ToArray(),
                     };
                     app.Restart();
                     if (!app.IsRunning)
@@ -206,20 +206,26 @@ namespace RagiSharkServerCS
             }
         }
 
-        private static bool TryParseSetIFCommand(string cmd, out int value)
+        private static bool TryParseSetIFCommand(string cmd, out int[] values)
         {
-            var m = Regex.Match(cmd, @"set if (\d+)");
+            var m = Regex.Match(cmd, @"set if list ((\d+)(,(\d+))*)");
             if (!m.Success)
             {
-                value = -1;
+                values = new int[] { };
                 return false;
             }
-            if (m.Groups.Count != 2)
+            if (m.Groups.Count < 2)
             {
-                value = -1;
+                values = new int[] { };
                 return false;
             }
-            return int.TryParse(m.Groups[1].Value, out value);
+            values =
+                m.Groups[1].Value
+                    .Split(",", StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => int.TryParse(x, out int a) ? a : -1)
+                    .Where(x => x >= 0)
+                    .ToArray();
+            return values.Length > 0;
         }
 
         private static string ToGetIFListJson(IEnumerable<CaptureInterface> items)
@@ -242,6 +248,53 @@ namespace RagiSharkServerCS
             sb.Append($@" ] ");
             sb.Append($@" }}");
             return sb.ToString();
+        }
+
+        class StartCommandArgs
+        {
+            public int[] CaptureInterfaces { get; set; } = new int[] { };
+            public string CaptureFilter { get; set; } = "";
+        }
+
+        private static StartCommandArgs ParseStartCommandArgs(string cmd)
+        {
+            var defs = new[] {
+                new CommandLineArgDefinition {
+                    Keys = new [] { "-i" },
+                    Converter = x => {
+                        if (!Regex.IsMatch(x, @"(\d+)(\,\d+)*"))
+                        {
+                            return new int[]{};
+                        }
+                        return
+                            x.Split(",", StringSplitOptions.RemoveEmptyEntries)
+                            .Select(y => int.TryParse(y, out int z) ? z : 0)
+                            .Where(x => x > 0)
+                            .ToArray();
+                    }
+                },
+                new CommandLineArgDefinition {
+                    Keys = new [] { "-cf" }
+                }
+            };
+
+            var result = new StartCommandArgs();
+            var args = cmd.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var arg in CommandLineParser.Parse(args, defs))
+            {
+                switch (arg.Key)
+                {
+                    case "-i":
+                        result.CaptureInterfaces = arg.Value as int[];
+                        break;
+                    case "-cf":
+                        result.CaptureFilter = arg.Value as string;
+                        break;
+                }
+            }
+
+            return result;
         }
     }
 }

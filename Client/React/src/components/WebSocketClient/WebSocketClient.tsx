@@ -56,7 +56,7 @@ export const WebSocketClient = (
       _onMessageReceived(e);
     };
     socketRef.current = sock;
-  });
+  }, []);
 
   const _onMessageReceived = useCallback((e: MessageEvent) => {
     console.log(e.data);

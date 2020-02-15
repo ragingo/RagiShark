@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -16,7 +17,7 @@ namespace RagiSharkServerCS.TShark
 
     class TSharkAppArgs
     {
-        public CaptureInterface CaptureInterface { get; set; }
+        public CaptureInterface[] CaptureInterfaces { get; set; }
         public string CaptureFilter { get; set; }
     }
 
@@ -164,12 +165,6 @@ namespace RagiSharkServerCS.TShark
 
         private static string CreateCaptureArguments(TSharkAppArgs args)
         {
-            string captureInterface = "";
-            if (args.CaptureInterface.No > 0)
-            {
-                captureInterface = $"-i {args.CaptureInterface.No}";
-            }
-
             string captureFilter = "";
             if (!string.IsNullOrEmpty(args.CaptureFilter))
             {
@@ -177,7 +172,10 @@ namespace RagiSharkServerCS.TShark
             }
 
             var sb = new StringBuilder();
-            sb.Append($"{captureInterface} ");
+            foreach (var item in args.CaptureInterfaces.Where(x => x.No > 0))
+            {
+                sb.Append($"-i {item.No} ");
+            }
             sb.Append($"{captureFilter} ");
             sb.Append("-T ek ");
             sb.Append("-e frame.number ");

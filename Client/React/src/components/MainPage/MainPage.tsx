@@ -1,23 +1,30 @@
-import { Button, TextField } from '@material-ui/core';
+import { Button, Checkbox, Input, ListItemText, MenuItem, Select, TextField } from '@material-ui/core';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PacketList } from '../PacketList/PacketList';
-import { MessageFormat, PacketMessageFormat, WebSocketClient, GetIFListCommandMessageFormat, isGetIFListCommandMessage, isPacketMessage } from '../WebSocketClient/WebSocketClient';
+import { isGetIFListCommandMessage, isPacketMessage, MessageFormat, PacketMessageFormat, WebSocketClient } from '../WebSocketClient/WebSocketClient';
 
 const MAX_RENDER_PACKET_COUNT = 500;
 const RECEIVED_PACKET_QUEUE_CHECK_INTERVAL = 50;
 const WS_SERVER_URL = 'ws://127.0.0.1:8080';
 
+type NicInfo = {
+  no: number;
+  name: string;
+  checked: boolean;
+};
+
 export const MainPage = () => {
   const socketRef = useRef<WebSocket>(null);
-  const [interfaces, setInterfaces] = useState<{ no: number, name: string}[]>([]);
+  const [interfaces, setInterfaces] = useState<NicInfo[]>([]);
   const [packets, setPackets] = useState<PacketMessageFormat[]>([]);
   const [queue, _] = useState<PacketMessageFormat[]>([]);
-  const [isCapturing, setCapturing] = useState<boolean>(true);
-  const [captureButtonText, setCaptureButtonText] = useState<string>('pause');
-  const [captureFilter, setCaptureFilter] = useState<string>();
-  const [displayFilter, setDisplayFilter] = useState<string>();
-  const [clientDisplayFilter, setClientDisplayFilter] = useState<string>();
+  const [isStarted, setStarted] = useState<boolean>(false);
+  const [isCapturing, setCapturing] = useState<boolean>(false);
+  const [captureButtonText, setCaptureButtonText] = useState<string>('start');
+  const [captureFilter, setCaptureFilter] = useState<string>('');
+  const [displayFilter, setDisplayFilter] = useState<string>('');
+  const [clientDisplayFilter, setClientDisplayFilter] = useState<string>('');
 
   // 受信済み(UI反映待ち)キューの監視
   useEffect(() => {
@@ -39,35 +46,38 @@ export const MainPage = () => {
   // キャプチャ状態変更時
   // 状態を変更しつつ、サーバへコマンド送信
   const onCaptureStateChanged = useCallback(() => {
-    setCapturing(!isCapturing);
-    if (isCapturing) {
-      queue.length = 0;
-      socketRef.current?.send('pause');
-      setCapturing(false);
-      setCaptureButtonText('resume');
+    if (isStarted) {
+      setCapturing(!isCapturing);
+      if (isCapturing) {
+        queue.length = 0;
+        setCapturing(false);
+        setCaptureButtonText('resume');
+        sendCommand(socketRef, 'pause');
+      } else {
+        setCapturing(true);
+        setCaptureButtonText('pause');
+        sendCommand(socketRef, 'resume');
+      }
     } else {
-      socketRef.current?.send('resume');
+      setStarted(true);
       setCapturing(true);
       setCaptureButtonText('pause');
+      sendCommand(socketRef, 'start', `-cf ${captureFilter} -i ${interfaces.filter(x => x.checked).map(x => x.no)}`);
     }
-  }, [isCapturing]);
+  }, [isStarted, isCapturing, captureFilter, interfaces]);
 
   // 受信時
   const onMessageReceived = useCallback((msg: MessageFormat) => {
     if (isGetIFListCommandMessage(msg)) {
-      const empty = { no: 0, name: '' };
-      setInterfaces([empty, ...msg.data]);
+      const empty = { no: 0, name: '', checked: false } as NicInfo;
+      const ifs = msg.data.map(x => { return { no: x.no, name: x.name, checked: false } as NicInfo; });
+      setInterfaces([empty, ...ifs]);
       return;
     }
-    // 非キャプチャ時は、持ってても仕方ないからキューをクリア
-    if (isCapturing) {
-      if (isPacketMessage(msg)) {
-        queue.push(msg);
-      }
-    } else {
-      queue.length = 0;
+    if (isPacketMessage(msg)) {
+      queue.push(msg);
     }
-  }, [isCapturing]);
+  }, []);
 
   // フォーカス外れたら反映
   const onCaptureFilterChange = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
@@ -98,11 +108,22 @@ export const MainPage = () => {
     sendCommand(socketRef, 'get if list');
   }, []);
 
-  const onIFListSelectionChanged = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedIF = interfaces[e.target.selectedIndex];
-    console.log(`selected interface: ${JSON.stringify(selectedIF)}`);
-    sendCommand(socketRef, `set if`, selectedIF.no);
-  }, [interfaces]);
+  const onIFListSelectionChanged = useCallback((e: React.ChangeEvent<{ value: NicInfo[] }>) => {
+    // 変更されてないやつしか含まれていない・・・謎
+    const unchangedItems = e.target.value;
+    interfaces.forEach(x => {
+      if (!unchangedItems.map(x => x.no).includes(x.no)) {
+        x.checked = !x.checked;
+      }
+    });
+    setInterfaces([...interfaces]);
+
+    if (isStarted) {
+      const selectedIFs = interfaces.filter(x => x.checked).map(x => x.no);
+      console.log(`selected interfaces: ${JSON.stringify(selectedIFs)}`);
+      sendCommand(socketRef, `set if list`, selectedIFs.join(','));
+    }
+  }, [interfaces, isStarted]);
 
   return (
     <div className='MainPage'>
@@ -111,11 +132,14 @@ export const MainPage = () => {
           <Button onClick={onGetIFListButtonClick} variant='contained'>load</Button>
         </div>
         <div className='MainPage-GetIFList'>
-          <select onChange={onIFListSelectionChanged}>
+          <Select onChange={onIFListSelectionChanged} multiple input={<Input />} value={interfaces} renderValue={showSelectedValues}>
             {interfaces.map(x => (
-              <option key={x.no}>{x.no === 0 ? '' : `${x.no} : ${x.name}`}</option>
+              <MenuItem key={x.no} value={x as any}>
+                <Checkbox checked={x.checked} />
+                <ListItemText primary={x.name} />
+              </MenuItem>
             ))}
-          </select>
+          </Select>
         </div>
         <div className='MainPage-CaptureButton'>
           <ToggleButton selected={isCapturing} onChange={onCaptureStateChanged}>{captureButtonText}</ToggleButton>
@@ -139,8 +163,20 @@ export const MainPage = () => {
   );
 };
 
-type WebSocketCommands = 'change cf' | 'change df' | 'get if list' | 'set if';
+type WebSocketCommands = 'start' | 'pause' | 'resume' | 'change cf' | 'change df' | 'get if list' | 'set if list';
 
-const sendCommand = (sock: React.RefObject<WebSocket>, cmd: WebSocketCommands, value?: string | number) => {
-  sock.current?.send(`${cmd} ${value ?? ''}`.trim());
+const sendCommand = (sock: React.RefObject<WebSocket>, cmd: WebSocketCommands, value?: string | number | string[] | number[]) => {
+  if (Array.isArray(value)) {
+    // TODO: あとで実装する
+  } else {
+    const msg = `${cmd} ${value ?? ''}`.trim();
+    console.log(msg);
+    sock.current?.send(msg);
+  }
+};
+
+const showSelectedValues = (values: NicInfo[]) => {
+  return values.filter(x => x.checked)
+    .map(x => x.no)
+    .join(', ');
 };

@@ -104,7 +104,7 @@ namespace RagiSharkServerCS
                 }
                 catch (IOException e) when (e.InnerException is SocketException)
                 {
-                    Console.WriteLine(e.Message);
+                    Debug.WriteLine(e.Message);
                 }
             }
         }
@@ -151,7 +151,7 @@ namespace RagiSharkServerCS
             }
             catch (IOException e) when (e.InnerException is SocketException)
             {
-                Console.WriteLine(e.Message);
+                Debug.WriteLine(e.Message);
             }
         }
 
@@ -221,7 +221,14 @@ namespace RagiSharkServerCS
             bytes.AddRange(header.ToBinary());
             bytes.AddRange(data);
             var arr = bytes.ToArray();
-            await _stream.WriteAsync(arr, 0, arr.Length).ConfigureAwait(false);
+            try
+            {
+                await _stream.WriteAsync(arr, 0, arr.Length).ConfigureAwait(false);
+            }
+            catch (IOException e) when (e.InnerException is SocketException)
+            {
+                Debug.WriteLine(e.Message);
+            }
         }
 
         private static string DecodeText(ReadOnlySpan<byte> span)
