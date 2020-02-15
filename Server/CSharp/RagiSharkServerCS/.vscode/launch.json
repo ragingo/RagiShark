@@ -10,7 +10,7 @@
             "args": [
                 "-l", "127.0.0.1",
                 "-p", "8080",
-                "-i", "6",
+                "-i", "5",
                 "-f", "port 80 or port 443"
             ],
             "cwd": "${workspaceFolder}",

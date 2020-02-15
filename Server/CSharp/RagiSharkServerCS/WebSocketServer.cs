@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Concurrent;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -23,7 +23,7 @@ namespace RagiSharkServerCS
         private TcpListener _listener;
         private NetworkStream _stream;
         private bool _needsRefresh;
-        private readonly ConcurrentQueue<string> _sendQueue = new ConcurrentQueue<string>();
+        private readonly List<string> _sendQueue = new List<string>();
 
         public event Action<string> TextDataReceived;
 
@@ -39,13 +39,24 @@ namespace RagiSharkServerCS
             await Process().ConfigureAwait(false);
         }
 
-        public void PushMessage(string msg)
+        public void PushMessage(string msg, bool highPriority = false)
         {
             if (_stream == null)
             {
                 return;
             }
-            _sendQueue.Enqueue(msg);
+
+            lock ((_sendQueue as ICollection).SyncRoot)
+            {
+                if (highPriority)
+                {
+                    _sendQueue.Insert(0, msg);
+                }
+                else
+                {
+                    _sendQueue.Add(msg);
+                }
+            }
         }
 
         private async Task Process()
@@ -192,18 +203,20 @@ namespace RagiSharkServerCS
 
         private async Task ProcessSendQueue()
         {
-            if (_sendQueue.Count == 0)
-            {
-                return;
-            }
+            string item = "";
 
-            if (!_sendQueue.TryDequeue(out string str))
+            lock ((_sendQueue as ICollection).SyncRoot)
             {
-                return;
+                if (_sendQueue.Count == 0)
+                {
+                    return;
+                }
+                item = _sendQueue[0];
+                _sendQueue.RemoveAt(0);
             }
 
             var bytes = new List<byte>();
-            var data = Encoding.UTF8.GetBytes(str);
+            var data = Encoding.UTF8.GetBytes(item);
             var header = WebSocketHeader.Create(true, OpCode.Text, data.Length);
             bytes.AddRange(header.ToBinary());
             bytes.AddRange(data);

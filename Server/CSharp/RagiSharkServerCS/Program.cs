@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
@@ -20,18 +21,20 @@ namespace RagiSharkServerCS
     {
         public AppConfig Config { get; set; }
         public bool Sendable { get; set; }
-        public bool Restarting { get; set; }
+        public bool NeedsRestart { get; set; }
         public string ReceivedCommandRaw { get; set; }
         public AppCommand ReceivedCommand { get; set; }
     }
 
     enum AppCommand
     {
+        None,
         Pause,
         Resume,
         ChangeCF,
         ChangeDF,
         GetIFList,
+        SetIF
     }
 
     class Program
@@ -43,20 +46,18 @@ namespace RagiSharkServerCS
             Console.WriteLine($"args: {string.Join(", ", args)}");
 
             var config = ParseCommandLineArgs(args);
-
             _state.Config = config;
-            _state.Restarting = false;
-            _state.Sendable = true;
 
             var ws = new WebSocketServer();
             ws.TextDataReceived += OnTextDataReceived;
-            _ = Task.Run(Work(ws)).ConfigureAwait(false);
+            _ = Task.Run(() => ProcessStdOut(ws)).ConfigureAwait(false);
+            _ = Task.Run(() => ProcessClientCommand(ws)).ConfigureAwait(false);
             await ws.Listen(IPAddress.Parse(config.ListenIPAddress), config.ListenPort).ConfigureAwait(false);
         }
 
         private static AppConfig ParseCommandLineArgs(string[] args)
         {
-            var defs = new [] {
+            var defs = new[] {
                 new CommandLineArgDefinition {
                     Keys = new [] { "-l", "--listen-addr" },
                     Converter = x => Regex.IsMatch(x, @"\d+\.\d+\.\d+\.\d+") ? x : "127.0.0.1"
@@ -107,24 +108,22 @@ namespace RagiSharkServerCS
             switch (text)
             {
                 case "pause":
-                    _state.Sendable = false;
+                    _state.ReceivedCommand = AppCommand.Pause;
                     break;
                 case "resume":
-                    _state.Sendable = true;
+                    _state.ReceivedCommand = AppCommand.Resume;
                     break;
 
                 case string s when s.StartsWith("change cf "):
-                    _state.Sendable = false;
-                    _state.Restarting = true;
-                    _state.Config.CaptureFilter = s.Replace("change cf ", "").Trim(); // TODO: かなり雑。直す。
+                    _state.ReceivedCommand = AppCommand.ChangeCF;
                     break;
 
                 case "get if list":
-                    // TODO:
+                    _state.ReceivedCommand = AppCommand.GetIFList;
                     break;
-                    
+
                 case string s when s.StartsWith("set if "):
-                    // TODO:
+                    _state.ReceivedCommand = AppCommand.SetIF;
                     break;
 
                 default:
@@ -133,89 +132,116 @@ namespace RagiSharkServerCS
             }
         }
 
-        private static Func<Task> Work(WebSocketServer ws)
+        private static async Task ProcessClientCommand(WebSocketServer ws)
         {
-            return async () =>
+            while (true)
             {
-                var app = new TSharkApp();
+                var cmd = _state.ReceivedCommand;
+                string cmdRaw = _state.ReceivedCommandRaw;
+                _state.ReceivedCommand = AppCommand.None;
+                _state.ReceivedCommandRaw = "";
 
-                while (true)
+                if (cmd == AppCommand.Pause)
                 {
-                    // TOOD: 雑対応。直す。
-                    if (_state.ReceivedCommandRaw?.StartsWith("set if ") == true)
+                    _state.Sendable = false;
+                }
+                else if (cmd == AppCommand.Resume)
+                {
+                    _state.Sendable = true;
+                }
+                else if (cmd == AppCommand.SetIF)
+                {
+                    if (TryParseSetIFCommand(cmdRaw, out int value))
                     {
-                        var m = Regex.Match(_state.ReceivedCommandRaw, @"set if (\d+)");
-                        _state.ReceivedCommandRaw = "";
-
-                        if (m.Success && m.Groups.Count == 2)
-                        {
-                            if (int.TryParse(m.Groups[1].Value, out int value)) {
-                                _state.Config.CaptureInterface = value;
-                                _state.Restarting = true;
-                            }
-                        }
+                        _state.Config.CaptureInterface = value;
+                        _state.NeedsRestart = true;
                     }
-                    // TOOD: 雑対応。直す。
-                    if (_state.ReceivedCommandRaw == "get if list")
-                    {
-                        _state.ReceivedCommandRaw = "";
+                }
+                else if (cmd == AppCommand.ChangeCF)
+                {
+                    _state.Config.CaptureFilter = cmdRaw.Replace("change cf ", "").Trim();
+                    _state.NeedsRestart = true;
+                }
+                else if (cmd == AppCommand.GetIFList)
+                {
+                    string msg = ToGetIFListJson(TSharkApp.GetInterfaceList());
+                    Debug.WriteLine($"send msg: {msg}");
+                    ws.PushMessage(msg, true);
+                }
 
-                        var sb = new StringBuilder();
-                        sb.Append($@" {{");
-                        sb.Append($@" ""type"": ""get_if_list_response"", ");
-                        sb.Append($@" ""data"": [ ");
-                        int i = 0;
-                        foreach (var item in TSharkApp.GetInterfaceList())
-                        {
-                            if (i > 0)
-                            {
-                                sb.Append(",");
-                            }
-                            sb.Append($@" {{ ""no"": {item.No}, ""name"": ""{item.Name}"" }}");
-                            i++;
-                        }
-                        sb.Append($@" ] ");
-                        sb.Append($@" }}");
+                await Task.Delay(50).ConfigureAwait(false);
+            }
+        }
 
-                        string msg = sb.ToString();
-                        Debug.WriteLine($"send msg: {msg}");
-                        ws.PushMessage(msg);
-                        continue;
-                    }
-
-                    if (!app.IsRunning || _state.Restarting)
-                    {
-                        _state.Restarting = false;
-                        _state.Sendable = true;
-
-                        app.Args = new TSharkAppArgs {
-                            CaptureFilter = _state.Config.CaptureFilter,
-                            CaptureInterface = new CaptureInterface { No = _state.Config.CaptureInterface },
-                        };
-                        app.Restart();
-                        if (!app.IsRunning)
-                        {
-                            await Task.Delay(1000).ConfigureAwait(false);
-                            continue;
-                        }
-                    }
-
-                    var reader = app.StandardOutput;
-
-                    if (reader.EndOfStream)
-                    {
-                        continue;
-                    }
-
-                    if (!_state.Sendable)
-                    {
-                        continue;
-                    }
-
-                    string line = await reader.ReadLineAsync().ConfigureAwait(false);
+        private static async Task ProcessStdOut(WebSocketServer ws)
+        {
+            var app = new TSharkApp();
+            app.StdOutLineReceived = (line) =>
+            {
+                if (_state.Sendable)
+                {
                     ws.PushMessage(line);
                 }
             };
+
+            while (true)
+            {
+                if (!app.IsRunning || _state.NeedsRestart)
+                {
+                    _state.NeedsRestart = false;
+                    _state.Sendable = true;
+
+                    app.Args = new TSharkAppArgs
+                    {
+                        CaptureFilter = _state.Config.CaptureFilter,
+                        CaptureInterface = new CaptureInterface { No = _state.Config.CaptureInterface },
+                    };
+                    app.Restart();
+                    if (!app.IsRunning)
+                    {
+                        await Task.Delay(1000).ConfigureAwait(false);
+                        continue;
+                    }
+                }
+            }
+        }
+
+        private static bool TryParseSetIFCommand(string cmd, out int value)
+        {
+            var m = Regex.Match(cmd, @"set if (\d+)");
+            if (!m.Success)
+            {
+                value = -1;
+                return false;
+            }
+            if (m.Groups.Count != 2)
+            {
+                value = -1;
+                return false;
+            }
+            return int.TryParse(m.Groups[1].Value, out value);
+        }
+
+        private static string ToGetIFListJson(IEnumerable<CaptureInterface> items)
+        {
+            var sb = new StringBuilder();
+            sb.Append($@" {{");
+            sb.Append($@" ""type"": ""get_if_list_response"", ");
+            sb.Append($@" ""data"": [ ");
+            int i = 0;
+            foreach (var item in items)
+            {
+                if (i > 0)
+                {
+                    sb.Append(",");
+                }
+                string name = item.Name.Replace("\\", "\\\\");
+                sb.Append($@" {{ ""no"": {item.No}, ""name"": ""{name}"" }}");
+                i++;
+            }
+            sb.Append($@" ] ");
+            sb.Append($@" }}");
+            return sb.ToString();
         }
     }
 }

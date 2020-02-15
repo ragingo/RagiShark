@@ -26,7 +26,7 @@ namespace RagiSharkServerCS.TShark
 
         public TSharkAppArgs Args { get; set; }
         public bool IsRunning => _process != null && !_process.HasExited;
-        public StreamReader StandardOutput => _process?.StandardOutput;
+        public Action<string> StdOutLineReceived { get; set; }
 
         public void Start()
         {
@@ -41,11 +41,22 @@ namespace RagiSharkServerCS.TShark
             try
             {
                 _process = Process.Start(psi);
+                _process.BeginOutputReadLine();
+                _process.OutputDataReceived += OnOutputDataReceived;
             }
             catch (Exception e)
             {
                 Debug.WriteLine(e);
             }
+        }
+
+        private void OnOutputDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e.Data))
+            {
+                return;
+            }
+            StdOutLineReceived?.Invoke(e.Data);
         }
 
         public void Restart()
@@ -63,10 +74,11 @@ namespace RagiSharkServerCS.TShark
 
             try
             {
+                _process.OutputDataReceived -= OnOutputDataReceived;
                 _process.Kill(true);
                 _process.Close();
             }
-            catch (Exception) {}
+            catch (Exception) { }
             finally
             {
                 _process.Dispose();
@@ -100,7 +112,8 @@ namespace RagiSharkServerCS.TShark
                     {
                         continue;
                     }
-                    list.Add(new CaptureInterface {
+                    list.Add(new CaptureInterface
+                    {
                         No = no,
                         Name = m.Groups[2].Value
                     });
