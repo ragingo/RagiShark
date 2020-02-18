@@ -20,6 +20,7 @@ add_definitions(-DUNICODE -D_UNICODE)
 
 set(RagiSharkServerCpp_Sources
     src/socket.cpp
+    src/websocket.cpp
     src/main.cpp
 )
 

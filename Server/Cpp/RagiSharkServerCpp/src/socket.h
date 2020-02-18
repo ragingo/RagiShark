@@ -9,6 +9,7 @@ public:
     };
 
     Socket();
+    ~Socket();
     static bool initialize();
     static void uninitialize();
     static std::wstring_view getLastError();

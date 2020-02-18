@@ -27,6 +27,11 @@ Socket::Socket() :
 {
 }
 
+Socket::~Socket()
+{
+    close();
+}
+
 bool Socket::initialize()
 {
     WSADATA data;
@@ -97,6 +102,9 @@ bool Socket::send(std::string_view text)
 
 void Socket::close()
 {
+    if (m_Socket == INVALID_SOCKET) {
+        return;
+    }
     ::closesocket(m_Socket);
     m_Socket = INVALID_SOCKET;
 }
