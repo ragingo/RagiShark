@@ -1,6 +1,8 @@
 #include "websocket.h"
 #include "socket.h"
 #include <cassert>
+#include <codecvt>
+#include <iostream>
 
 WebSocket::WebSocket()
 {
@@ -28,13 +30,19 @@ bool WebSocket::listen(int port)
     if (!m_Socket->listen()) {
         return false;
     }
+    if (!m_Socket->accept()) {
+        return false;
+    }
+    while (true)
+    {
+        std::string s;
+        int len = m_Socket->receive(s);
+        if (len == 0) {
+            continue;
+        }
+        onMessageReceived(s);
+    }
     return true;
-}
-
-bool WebSocket::accept()
-{
-    assert(m_Socket);
-    return m_Socket->accept();
 }
 
 bool WebSocket::sendText(std::string text)
@@ -50,4 +58,22 @@ std::vector<uint8_t> WebSocket::createHeader(bool fin, OpCode opcode, int len)
 {
     std::vector<uint8_t> ret;
     return ret;
+}
+
+void WebSocket::onMessageReceived(std::string_view msg)
+{
+    if (msg._Starts_with("GET /")) { // 良くないけどあったから使おう・・・
+        onGetRequestReceived(msg);
+    }
+    else {
+        onDataFrameReceived(msg);
+    }
+}
+
+void WebSocket::onGetRequestReceived(std::string_view msg)
+{
+}
+
+void WebSocket::onDataFrameReceived(std::string_view msg)
+{
 }

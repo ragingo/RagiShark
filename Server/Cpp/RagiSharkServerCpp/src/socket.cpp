@@ -1,5 +1,6 @@
 #include "socket.h"
 
+#include <array>
 #include <cstdint>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
@@ -100,11 +101,27 @@ bool Socket::send(std::string_view text)
     return ret > 0;
 }
 
+bool Socket::send(std::vector<uint8_t> data)
+{
+    int ret = ::send(m_Socket, reinterpret_cast<char*>(data.data()), data.size(), 0);
+    return ret > 0;
+}
+
+int Socket::receive(std::string& text, int size)
+{
+    std::vector<char> buf;
+    buf.resize(size);
+    int total_len = ::recv(m_Socket, buf.data(), size, 0);
+    text.assign(buf.data());
+    return total_len;
+}
+
 void Socket::close()
 {
     if (m_Socket == INVALID_SOCKET) {
         return;
     }
+    ::shutdown(m_Socket, SD_BOTH);
     ::closesocket(m_Socket);
     m_Socket = INVALID_SOCKET;
 }
