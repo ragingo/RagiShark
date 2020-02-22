@@ -4,9 +4,72 @@
 #include <codecvt>
 #include <iostream>
 #include <regex>
+#define NOMINMAX
+#include <Windows.h>
+#include <wincrypt.h>
+#pragma comment(lib, "crypt32")
 
 namespace {
     constexpr std::string_view WS_KEY_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+    std::string createSha1Hash(std::string text)
+    {
+        HCRYPTPROV prov = 0;
+        HCRYPTHASH hash = 0;
+
+        auto release = [&]()-> void {
+            if (hash) {
+                CryptDestroyHash(hash);
+            }
+            if (prov) {
+                CryptReleaseContext(prov, 0);
+            }
+        };
+
+        int ret = CryptAcquireContext(&prov, 0, 0, PROV_RSA_FULL, 0);
+        if (!ret) {
+            release();
+            return "";
+        }
+
+        ret = CryptCreateHash(prov, CALG_SHA1, 0, 0, &hash);
+        if (!ret) {
+            release();
+            return "";
+        }
+
+        ret = CryptHashData(hash, reinterpret_cast<const uint8_t*>(text.c_str()), text.size(), 0);
+        if (!ret) {
+            release();
+            return "";
+        }
+
+        DWORD len = 0;
+        ret = CryptGetHashParam(hash, HP_HASHVAL, nullptr, &len, 0);
+        if (!ret) {
+            release();
+            return "";
+        }
+
+        std::vector<uint8_t> hash_value;
+        hash_value.resize(len);
+        ret = CryptGetHashParam(hash, HP_HASHVAL, hash_value.data(), &len, 0);
+        if (!ret) {
+            release();
+            return "";
+        }
+
+        DWORD len2 = 1024;
+        char buf2[1024] = {0};
+        ret = CryptBinaryToString(hash_value.data(), hash_value.size(), CRYPT_STRING_BASE64, buf2, &len2);
+        if (!ret) {
+            release();
+            return "";
+        }
+
+        release();
+        return std::string(buf2);
+    }
 }
 
 WebSocket::WebSocket()
@@ -82,10 +145,10 @@ void WebSocket::onGetRequestReceived(std::string_view msg)
     if (!std::regex_search(msg.data(), m, pattern)) {
         return;
     }
-    if (m.empty()) {
+    if (m.empty() || m.size() < 2) {
         return;
     }
-    const auto result = m[0];
+    const auto result = m[1];
     if (!result.matched) {
         return;
     }
@@ -95,10 +158,13 @@ void WebSocket::onGetRequestReceived(std::string_view msg)
     int pos2 = std::min(key.find_first_of("\r\n"), key.size());
     key.remove_prefix(pos1);
     key.remove_suffix(key.size() - pos2);
-    // std::cout << key << std::endl;
+    std::cout << "key: " << key << std::endl;
 
     auto new_key = std::string(key).append(WS_KEY_GUID);
-    // std::cout << new_key << std::endl;
+    std::cout << "new key: " << new_key << std::endl;
+
+    auto hash = createSha1Hash(new_key);
+    std::cout << "sha1 hash: " << hash << std::endl;
 }
 
 void WebSocket::onDataFrameReceived(std::string_view msg)

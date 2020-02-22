@@ -9,7 +9,7 @@ int main()
     std::cout << "launch" << std::endl;
 
     if (!Socket::initialize()) {
-        std::wcout << L"initialize error: " << Socket::getLastError() << std::endl;
+        std::cout << "initialize error: " << Socket::getLastError() << std::endl;
         return EXIT_FAILURE;
     }
 
