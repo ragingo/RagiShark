@@ -36,7 +36,7 @@ Socket::~Socket()
 bool Socket::initialize()
 {
     WSADATA data;
-    int ret = WSAStartup(MAKEWORD(2, 0), &data);
+    int ret = WSAStartup(MAKEWORD(2, 2), &data);
     s_Initialized = ret == 0;
     return ret == 0;
 }
