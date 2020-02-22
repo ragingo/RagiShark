@@ -3,6 +3,11 @@
 #include <cassert>
 #include <codecvt>
 #include <iostream>
+#include <regex>
+
+namespace {
+    constexpr std::string_view WS_KEY_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+}
 
 WebSocket::WebSocket()
 {
@@ -72,6 +77,28 @@ void WebSocket::onMessageReceived(std::string_view msg)
 
 void WebSocket::onGetRequestReceived(std::string_view msg)
 {
+    const auto pattern = std::regex("Sec-WebSocket-Key: (.*)");
+    std::cmatch m;
+    if (!std::regex_search(msg.data(), m, pattern)) {
+        return;
+    }
+    if (m.empty()) {
+        return;
+    }
+    const auto result = m[0];
+    if (!result.matched) {
+        return;
+    }
+
+    auto key = std::string_view(result.first);
+    int pos1 = std::min(key.find_first_not_of(" \r\n"), key.size());
+    int pos2 = std::min(key.find_first_of("\r\n"), key.size());
+    key.remove_prefix(pos1);
+    key.remove_suffix(key.size() - pos2);
+    // std::cout << key << std::endl;
+
+    auto new_key = std::string(key).append(WS_KEY_GUID);
+    // std::cout << new_key << std::endl;
 }
 
 void WebSocket::onDataFrameReceived(std::string_view msg)
