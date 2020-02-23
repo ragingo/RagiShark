@@ -12,6 +12,8 @@
         ],
             "defines": [
                 "_DEBUG",
+                "_WINDOWS",
+                "_WIN64",
                 "_HAS_CXX17"
             ],
             "windowsSdkVersion": "10.0.18362.0",

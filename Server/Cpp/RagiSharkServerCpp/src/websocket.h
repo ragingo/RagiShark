@@ -7,6 +7,7 @@
 #include <functional>
 
 class Socket;
+struct WebSocketHeader;
 
 enum class OpCode
 {
@@ -43,4 +44,6 @@ private:
     void onMessageReceived(std::string_view msg);
     void onGetRequestReceived(std::string_view msg);
     void onDataFrameReceived(std::string_view msg);
+    void onTextFrameReceived(const WebSocketHeader& header, std::string_view msg);
+    void onCloseReceived();
 };

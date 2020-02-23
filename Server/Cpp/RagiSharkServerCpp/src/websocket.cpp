@@ -1,75 +1,14 @@
 #include "websocket.h"
+#include "websocketheader.h"
 #include "socket.h"
+#include "util/util.h"
 #include <cassert>
-#include <codecvt>
 #include <iostream>
 #include <regex>
-#define NOMINMAX
-#include <Windows.h>
-#include <wincrypt.h>
-#pragma comment(lib, "crypt32")
+
 
 namespace {
     constexpr std::string_view WS_KEY_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-
-    std::string createSha1Hash(std::string text)
-    {
-        HCRYPTPROV prov = 0;
-        HCRYPTHASH hash = 0;
-
-        auto release = [&]()-> void {
-            if (hash) {
-                CryptDestroyHash(hash);
-            }
-            if (prov) {
-                CryptReleaseContext(prov, 0);
-            }
-        };
-
-        int ret = CryptAcquireContext(&prov, 0, 0, PROV_RSA_FULL, 0);
-        if (!ret) {
-            release();
-            return "";
-        }
-
-        ret = CryptCreateHash(prov, CALG_SHA1, 0, 0, &hash);
-        if (!ret) {
-            release();
-            return "";
-        }
-
-        ret = CryptHashData(hash, reinterpret_cast<const uint8_t*>(text.c_str()), text.size(), 0);
-        if (!ret) {
-            release();
-            return "";
-        }
-
-        DWORD len = 0;
-        ret = CryptGetHashParam(hash, HP_HASHVAL, nullptr, &len, 0);
-        if (!ret) {
-            release();
-            return "";
-        }
-
-        std::vector<uint8_t> hash_value;
-        hash_value.resize(len);
-        ret = CryptGetHashParam(hash, HP_HASHVAL, hash_value.data(), &len, 0);
-        if (!ret) {
-            release();
-            return "";
-        }
-
-        DWORD len2 = 1024;
-        char buf2[1024] = {0};
-        ret = CryptBinaryToString(hash_value.data(), hash_value.size(), CRYPT_STRING_BASE64, buf2, &len2);
-        if (!ret) {
-            release();
-            return "";
-        }
-
-        release();
-        return std::string(buf2);
-    }
 }
 
 WebSocket::WebSocket()
@@ -177,5 +116,51 @@ void WebSocket::onGetRequestReceived(std::string_view msg)
 
 void WebSocket::onDataFrameReceived(std::string_view msg)
 {
-    std::cout << msg << std::endl;
+    if (msg.length() < 2) {
+        return;
+    }
+
+    auto bytes = reinterpret_cast<const uint8_t*>(msg.data());
+    WebSocketHeader header = {};
+    websocket_header_parse(header, bytes);
+
+    switch (static_cast<OpCode>(header.opcode)) {
+        case OpCode::Text:
+            onTextFrameReceived(header, msg);
+            break;
+        case OpCode::Close:
+            onCloseReceived();
+            break;
+    }
+}
+
+void WebSocket::onTextFrameReceived(const WebSocketHeader& header, std::string_view msg)
+{
+    if (header.payload_length <= 125) {
+        if (header.mask) {
+            const int MASKING_KEY_OFFSET = 2;
+            const int MASKING_KEY_LENGTH = 4;
+            auto maskingKey = msg.substr(MASKING_KEY_OFFSET, MASKING_KEY_LENGTH);
+
+            const int DATA_OFFSET = MASKING_KEY_OFFSET + MASKING_KEY_LENGTH;
+            auto data = msg.substr(DATA_OFFSET);
+
+            std::string result;
+            result.resize(data.size());
+
+            for (int i = 0; i < data.size(); i++) {
+                result[i] = data[i] ^ maskingKey[i % 4];
+            }
+
+            std::cout << result << std::endl;
+        }
+    }
+    else if (header.payload_length == 126) {
+    }
+    else if (header.payload_length == 127) {
+    }
+}
+
+void WebSocket::onCloseReceived()
+{
 }
