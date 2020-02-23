@@ -165,8 +165,17 @@ void WebSocket::onGetRequestReceived(std::string_view msg)
 
     auto hash = createSha1Hash(new_key);
     std::cout << "sha1 hash: " << hash << std::endl;
+
+    std::string header;
+    header += "HTTP/1.1 101 Switching Protocols\r\n";
+    header += "Connection: Upgrade\r\n";
+    header += "Upgrade: websocket\r\n";
+    header += "Sec-WebSocket-Accept: " + hash + "\r\n";
+
+    m_Socket->send(header);
 }
 
 void WebSocket::onDataFrameReceived(std::string_view msg)
 {
+    std::cout << msg << std::endl;
 }
