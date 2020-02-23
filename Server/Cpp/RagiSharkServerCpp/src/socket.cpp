@@ -1,5 +1,6 @@
 #include "socket.h"
 
+#include <array>
 #include <cstdint>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
@@ -35,7 +36,7 @@ Socket::~Socket()
 bool Socket::initialize()
 {
     WSADATA data;
-    int ret = WSAStartup(MAKEWORD(2, 0), &data);
+    int ret = WSAStartup(MAKEWORD(2, 2), &data);
     s_Initialized = ret == 0;
     return ret == 0;
 }
@@ -45,13 +46,13 @@ void Socket::uninitialize()
     WSACleanup();
 }
 
-std::wstring_view Socket::getLastError()
+std::string_view Socket::getLastError()
 {
     int err = WSAGetLastError();
     const int buf_size = 512;
-    wchar_t buf[buf_size] = {0};
+    char buf[buf_size] = {0};
     FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, err, 0, buf, buf_size, nullptr);
-    return std::wstring_view(buf);
+    return std::string_view(buf);
 }
 
 bool Socket::bind(INADDR inaddr, int port)
@@ -100,11 +101,27 @@ bool Socket::send(std::string_view text)
     return ret > 0;
 }
 
+bool Socket::send(std::vector<uint8_t> data)
+{
+    int ret = ::send(m_Socket, reinterpret_cast<char*>(data.data()), data.size(), 0);
+    return ret > 0;
+}
+
+int Socket::receive(std::string& text, int size)
+{
+    std::vector<char> buf;
+    buf.resize(size);
+    int total_len = ::recv(m_Socket, buf.data(), size, 0);
+    text.assign(buf.data());
+    return total_len;
+}
+
 void Socket::close()
 {
     if (m_Socket == INVALID_SOCKET) {
         return;
     }
+    ::shutdown(m_Socket, SD_BOTH);
     ::closesocket(m_Socket);
     m_Socket = INVALID_SOCKET;
 }

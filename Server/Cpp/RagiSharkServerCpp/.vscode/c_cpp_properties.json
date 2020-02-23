@@ -12,8 +12,8 @@
         ],
             "defines": [
                 "_DEBUG",
-                "UNICODE",
-                "_UNICODE",
+                "_WINDOWS",
+                "_WIN64",
                 "_HAS_CXX17"
             ],
             "windowsSdkVersion": "10.0.18362.0",
@@ -41,9 +41,7 @@
                 "${workspaceFolder}/**"
             ],
             "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
+                "_DEBUG"
             ],
             "compilerPath": "/usr/bin/gcc",
             "compilerArgs": [],

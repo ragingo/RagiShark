@@ -16,9 +16,11 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES Clang|GNU|AppleClang)
     add_compile_options(-Wno-unused-function -Wno-unused-parameter -Wno-padded -Wno-sign-conversion -Wno-sign-compare)
 endif()
 
-add_definitions(-DUNICODE -D_UNICODE)
+# add_definitions(-DUNICODE -D_UNICODE)
+add_definitions(-D_WINDOWS -D_WIN64)
 
 set(RagiSharkServerCpp_Sources
+    src/util/util_windows.cpp
     src/socket.cpp
     src/websocket.cpp
     src/main.cpp
