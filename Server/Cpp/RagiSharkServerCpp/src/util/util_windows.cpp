@@ -1,18 +1,12 @@
-#if defined(_WINDOWS) || defined(_WIN32) || defined(_WIN64)
-
 #include "util.h"
+
+#ifdef RAGII_WINDOWS
+
 #include <vector>
-
-#define _WIN32_WINNT 0x0A00
-#include <sdkddkver.h>
-
-#define NOMINMAX
-#include <Windows.h>
-
 #include <wincrypt.h>
 #pragma comment(lib, "crypt32")
 
-std::string createSha1Hash(std::string text)
+std::string createSha1Hash(std::string_view text)
 {
     HCRYPTPROV prov = 0;
     HCRYPTHASH hash = 0;
@@ -38,37 +32,44 @@ std::string createSha1Hash(std::string text)
         return "";
     }
 
-    ret = CryptHashData(hash, reinterpret_cast<const uint8_t*>(text.c_str()), text.size(), 0);
+    ret = CryptHashData(hash, reinterpret_cast<const uint8_t*>(text.data()), text.size(), 0);
     if (!ret) {
         dispose();
         return "";
     }
 
-    DWORD len = 0;
-    ret = CryptGetHashParam(hash, HP_HASHVAL, nullptr, &len, 0);
+    DWORD hash_len = 0;
+    ret = CryptGetHashParam(hash, HP_HASHVAL, nullptr, &hash_len, 0);
     if (!ret) {
         dispose();
         return "";
     }
 
     std::vector<uint8_t> hash_value;
-    hash_value.resize(len);
-    ret = CryptGetHashParam(hash, HP_HASHVAL, hash_value.data(), &len, 0);
+    hash_value.resize(hash_len);
+    ret = CryptGetHashParam(hash, HP_HASHVAL, hash_value.data(), &hash_len, 0);
     if (!ret) {
         dispose();
         return "";
     }
 
-    DWORD len2 = 1024;
-    char buf2[1024] = {0};
-    ret = CryptBinaryToString(hash_value.data(), hash_value.size(), CRYPT_STRING_BASE64, buf2, &len2);
+    DWORD base64_len = 0;
+    ret = CryptBinaryToString(hash_value.data(), hash_value.size(), CRYPT_STRING_BASE64, nullptr, &base64_len);
+    if (!ret) {
+        dispose();
+        return "";
+    }
+
+    std::vector<char> base64;
+    base64.resize(base64_len);
+    ret = CryptBinaryToString(hash_value.data(), hash_value.size(), CRYPT_STRING_BASE64, base64.data(), &base64_len);
     if (!ret) {
         dispose();
         return "";
     }
 
     dispose();
-    return std::string(buf2);
+    return std::string(base64.data());
 }
 
 #endif

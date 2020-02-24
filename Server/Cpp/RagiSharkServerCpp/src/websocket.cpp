@@ -9,6 +9,25 @@
 
 namespace {
     constexpr std::string_view WS_KEY_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+    std::string decodeText(std::string_view msg)
+    {
+        const int MASKING_KEY_OFFSET = 2;
+        const int MASKING_KEY_LENGTH = 4;
+        auto maskingKey = msg.substr(MASKING_KEY_OFFSET, MASKING_KEY_LENGTH);
+
+        const int DATA_OFFSET = MASKING_KEY_OFFSET + MASKING_KEY_LENGTH;
+        auto data = msg.substr(DATA_OFFSET);
+
+        std::string result;
+        result.resize(data.size());
+
+        for (int i = 0; i < data.size(); i++) {
+            result[i] = data[i] ^ maskingKey[i % 4];
+        }
+
+        return result;
+    }
 }
 
 WebSocket::WebSocket()
@@ -138,21 +157,10 @@ void WebSocket::onTextFrameReceived(const WebSocketHeader& header, std::string_v
 {
     if (header.payload_length <= 125) {
         if (header.mask) {
-            const int MASKING_KEY_OFFSET = 2;
-            const int MASKING_KEY_LENGTH = 4;
-            auto maskingKey = msg.substr(MASKING_KEY_OFFSET, MASKING_KEY_LENGTH);
-
-            const int DATA_OFFSET = MASKING_KEY_OFFSET + MASKING_KEY_LENGTH;
-            auto data = msg.substr(DATA_OFFSET);
-
-            std::string result;
-            result.resize(data.size());
-
-            for (int i = 0; i < data.size(); i++) {
-                result[i] = data[i] ^ maskingKey[i % 4];
+            auto text = decodeText(msg);
+            if (m_Handlers.received) {
+                m_Handlers.received(text);
             }
-
-            std::cout << result << std::endl;
         }
     }
     else if (header.payload_length == 126) {

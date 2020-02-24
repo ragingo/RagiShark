@@ -14,6 +14,11 @@ int main()
     }
 
     WebSocket ws;
+    WebSocket::Handlers handlers;
+    handlers.received = [&](std::string_view msg)->void {
+        std::cout << "received: " << msg << std::endl;
+    };
+    ws.setHandlers(handlers);
     ws.initialize();
     ws.listen(8080);
 
