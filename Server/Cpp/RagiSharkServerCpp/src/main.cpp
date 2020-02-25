@@ -4,8 +4,11 @@
 #include "socket.h"
 #include "websocket.h"
 
+#include "util/util.h"
+
 int main()
 {
+    // createProcess("tshark", { "-D" });
     std::cout << "launch" << std::endl;
 
     if (!Socket::initialize()) {

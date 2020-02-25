@@ -46,13 +46,13 @@ void Socket::uninitialize()
     WSACleanup();
 }
 
-std::string_view Socket::getLastError()
+std::string Socket::getLastError()
 {
     int err = WSAGetLastError();
     const int buf_size = 512;
     char buf[buf_size] = {0};
     FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, err, 0, buf, buf_size, nullptr);
-    return std::string_view(buf);
+    return std::string(buf);
 }
 
 bool Socket::bind(INADDR inaddr, int port)

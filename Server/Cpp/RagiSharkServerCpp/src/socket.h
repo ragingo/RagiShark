@@ -14,7 +14,7 @@ public:
     ~Socket();
     static bool initialize();
     static void uninitialize();
-    static std::string_view getLastError();
+    static std::string getLastError();
     bool bind(INADDR inaddr, int port);
     bool listen(int backlog = DEFAULT_BACKLOG);
     bool accept();
