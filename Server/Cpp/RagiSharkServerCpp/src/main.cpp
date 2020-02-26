@@ -8,7 +8,10 @@
 
 int main()
 {
+    // std::vector<std::string_view> args = { "-D" };
+    // createProcess("tshark", std::move(args));
     // createProcess("tshark", { "-D" });
+
     std::cout << "launch" << std::endl;
 
     if (!Socket::initialize()) {
@@ -23,6 +26,14 @@ int main()
     };
     ws.setHandlers(handlers);
     ws.initialize();
+
+    std::thread t([&ws]()-> void {
+        while (true) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            ws.sendText("aaa");
+        }
+    });
+
     ws.listen(8080);
 
     Socket::uninitialize();

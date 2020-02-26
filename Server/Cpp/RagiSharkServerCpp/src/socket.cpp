@@ -97,18 +97,28 @@ bool Socket::accept()
 
 bool Socket::send(std::string_view text)
 {
+    if (m_Socket == INVALID_SOCKET) {
+        return false;
+    }
     int ret = ::send(m_Socket, text.data(), text.length(), 0);
     return ret > 0;
 }
 
 bool Socket::send(std::vector<uint8_t> data)
 {
+    if (m_Socket == INVALID_SOCKET) {
+        return false;
+    }
     int ret = ::send(m_Socket, reinterpret_cast<char*>(data.data()), data.size(), 0);
     return ret > 0;
 }
 
 int Socket::receive(std::string& text, int size)
 {
+    if (m_Socket == INVALID_SOCKET) {
+        return 0;
+    }
+
     std::vector<char> buf;
     buf.resize(size);
     int total_len = ::recv(m_Socket, buf.data(), size, 0);

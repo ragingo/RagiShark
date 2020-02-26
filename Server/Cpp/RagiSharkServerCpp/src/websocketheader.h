@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <vector>
 
 struct WebSocketHeader
 {
@@ -27,4 +28,21 @@ inline void websocket_header_parse(WebSocketHeader& header, const uint8_t* data)
     header.opcode = b0 & 0x0f;
     header.mask = (b1 & 0x80) == 0x80;
     header.payload_length = b1 & 0x7f;
+}
+
+inline void websocket_header_create(std::vector<uint8_t>& header, bool fin, OpCode opcode, int len)
+{
+    if (len <= 125) {
+        header.resize(2);
+        header[0] = (((fin ? 1 : 0) << 7) | static_cast<uint8_t>(opcode));
+        header[1] = static_cast<uint8_t>(len);
+    }
+    else if (len <= 0xffff) {
+        header.resize(4);
+        // TODO:
+    }
+    else if (len == 127) {
+        header.resize(10);
+        // TODO:
+    }
 }

@@ -75,14 +75,18 @@ bool WebSocket::sendText(std::string text)
 {
     assert(m_Socket);
     std::string send_data;
-    // TODO:
-    const auto&& header = std::move(createHeader(true, OpCode::Text, 1));
+
+    std::vector<uint8_t> header(createHeader(true, OpCode::Text, text.size()));
+    send_data.append(header.begin(), header.end());
+    send_data.append(text);
+
     return m_Socket->send(send_data);
 }
 
 std::vector<uint8_t> WebSocket::createHeader(bool fin, OpCode opcode, int len)
 {
     std::vector<uint8_t> ret;
+    websocket_header_create(ret, fin, opcode, len);
     return ret;
 }
 
