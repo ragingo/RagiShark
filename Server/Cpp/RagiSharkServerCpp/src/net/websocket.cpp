@@ -1,6 +1,6 @@
-#include "websocket.h"
-#include "websocketheader.h"
-#include "socket.h"
+#include "net/websocket.h"
+#include "net/websocketheader.h"
+#include "net/socket.h"
 #include "util/util.h"
 #include <cassert>
 #include <iostream>

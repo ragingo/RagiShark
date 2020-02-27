@@ -19,10 +19,12 @@ endif()
 # add_definitions(-DUNICODE -D_UNICODE)
 add_definitions(-D_WINDOWS -D_WIN64)
 
+include_directories(include)
+
 set(RagiSharkServerCpp_Sources
     src/util/util_windows.cpp
-    src/socket.cpp
-    src/websocket.cpp
+    src/net/socket.cpp
+    src/net/websocket.cpp
     src/main.cpp
 )
 

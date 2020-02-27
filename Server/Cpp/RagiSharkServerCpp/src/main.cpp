@@ -1,8 +1,8 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
-#include "socket.h"
-#include "websocket.h"
+#include "net/socket.h"
+#include "net/websocket.h"
 
 #include "util/util.h"
 
