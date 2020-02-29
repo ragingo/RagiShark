@@ -3,8 +3,10 @@
 #include <thread>
 #include "net/socket.h"
 #include "net/websocket.h"
-
 #include "util/util.h"
+
+using namespace ragii::net;
+using namespace ragii::util;
 
 int main()
 {
