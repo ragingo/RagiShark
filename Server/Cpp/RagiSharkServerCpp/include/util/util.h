@@ -19,7 +19,5 @@ namespace ragii::util
 
     std::string createSha1Hash(std::string_view text);
 
-    void createProcess(std::string_view path, std::vector<std::string_view> args);
-
     void outputSystemLastError();
 }

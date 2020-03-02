@@ -74,33 +74,6 @@ namespace ragii::util
         return std::string(base64.data());
     }
 
-    void createProcess(std::string_view app, std::vector<std::string_view> args)
-    {
-        args.insert(args.begin(), app);
-        auto commadline = join(" ", args);
-        STARTUPINFO si = {};
-        si.wShowWindow = SW_HIDE;
-        PROCESS_INFORMATION pi = {};
-
-        BOOL ret = CreateProcess(
-            nullptr,
-            const_cast<char*>(commadline.c_str()),
-            nullptr,
-            nullptr,
-            FALSE,
-            CREATE_NO_WINDOW,
-            nullptr,
-            nullptr,
-            &si,
-            &pi
-        );
-
-        if (!ret) {
-            outputSystemLastError();
-            return;
-        }
-    }
-
     void outputSystemLastError()
     {
         int err = GetLastError();

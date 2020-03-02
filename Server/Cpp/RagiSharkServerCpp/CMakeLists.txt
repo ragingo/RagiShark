@@ -22,9 +22,10 @@ add_definitions(-D_WINDOWS -D_WIN64)
 include_directories(include)
 
 set(RagiSharkServerCpp_Sources
-    src/util/util_windows.cpp
+    src/diagnostics/windows/process.cpp
     src/net/socket.cpp
     src/net/websocket.cpp
+    src/util/util_windows.cpp
     src/main.cpp
 )
 

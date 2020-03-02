@@ -5,6 +5,8 @@
 #include "net/websocket.h"
 #include "util/util.h"
 
+#include "diagnostics/process.h"
+
 using namespace ragii::net;
 using namespace ragii::util;
 
@@ -13,6 +15,9 @@ int main()
     // std::vector<std::string_view> args = { "-D" };
     // createProcess("tshark", std::move(args));
     // createProcess("tshark", { "-D" });
+
+    auto proc = ragii::diagnostics::Process::Start("tshark", { "-D" });
+
 
     std::cout << "launch" << std::endl;
 
