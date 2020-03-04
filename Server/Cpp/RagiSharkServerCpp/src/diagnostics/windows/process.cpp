@@ -112,6 +112,8 @@ namespace ragii::diagnostics
         SetConsoleOutputCP(CP_UTF8);
 
         char buf[1024] = {0};
+        std::vector<std::string> stock;
+
         while (true) {
             memset(buf, 0, sizeof(buf));
             DWORD read = 0;
@@ -120,10 +122,26 @@ namespace ragii::diagnostics
                 continue;
             }
 
-            // TODO: 行単位で処理するよう直す
-            if (m_StdOutReceivedHandler) {
-                m_StdOutReceivedHandler(buf);
+            std::string_view sv(buf);
+            int offset = 0;
+            while (true) {
+                int terminator_pos = sv.find_first_of("\r\n", offset);
+                if (terminator_pos == std::string_view::npos) {
+                    stock.push_back(sv.data());
+                    break;
+                }
+
+                auto line = sv.substr(offset, terminator_pos);
+                if (m_StdOutReceivedHandler) {
+                    m_StdOutReceivedHandler(std::string(line));
+                }
+                offset += sv.find_first_not_of("\r\n", terminator_pos);
             }
+
+            // TODO: 行単位で処理するよう直す
+            // if (m_StdOutReceivedHandler) {
+            //     m_StdOutReceivedHandler(sv.data());
+            // }
 
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
