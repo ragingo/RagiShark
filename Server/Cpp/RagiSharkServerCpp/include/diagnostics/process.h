@@ -3,6 +3,7 @@
 #include <string_view>
 #include <vector>
 #include <memory>
+#include <functional>
 #include "common/common.h"
 
 namespace ragii::diagnostics
@@ -35,13 +36,19 @@ namespace ragii::diagnostics
         Handle getProcessHandle() const { return m_ProcessHandle; }
         Handle getThreadHandle() const { return m_ThreadHandle; }
 
-        void debug1();
+        void setStdOutReceivedHandler(std::function<void(const std::string&)> handler) {
+            m_StdOutReceivedHandler = handler;
+        }
 
         static const int INVALID_PROCESS_ID = -1;
     private:
+        void receive();
+
         int m_ProcessId = INVALID_PROCESS_ID;
         Handle m_ProcessHandle = INVALID_HANDLE;
         Handle m_ThreadHandle = INVALID_HANDLE;
         std::unique_ptr<ProcessStartInfo> m_StartInfo;
+        std::function<void(std::string)> m_StdOutReceivedHandler;
+        std::thread m_ReceiveThread;
     };
 }

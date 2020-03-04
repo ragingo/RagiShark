@@ -74,6 +74,8 @@ namespace ragii::diagnostics
         ret->m_ProcessHandle = pi.hProcess;
         ret->m_ThreadHandle = pi.hThread;
         ret->m_StartInfo = std::make_unique<ProcessStartInfo>(startInfo);
+        ret->m_ReceiveThread = std::thread(&Process::receive, ret);
+        ret->m_ReceiveThread.detach();
 
         return ret;
     }
@@ -98,7 +100,7 @@ namespace ragii::diagnostics
         }
     }
 
-    void Process::debug1()
+    void Process::receive()
     {
         if (!m_StartInfo->RedirectStdOut) {
             return;
@@ -117,7 +119,11 @@ namespace ragii::diagnostics
             if (!ret || read == 0) {
                 continue;
             }
-            std::cout << buf << std::endl;
+
+            // TODO: 行単位で処理するよう直す
+            if (m_StdOutReceivedHandler) {
+                m_StdOutReceivedHandler(buf);
+            }
 
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }

@@ -19,7 +19,9 @@ int main()
     psi.RedirectStdOut = true;
 
     auto proc = ragii::diagnostics::Process::Start(psi);
-    proc->debug1();
+    proc->setStdOutReceivedHandler([=] (const std::string& s) -> void {
+        std::cout << s << std::endl;
+    });
 
 
     std::cout << "launch" << std::endl;
