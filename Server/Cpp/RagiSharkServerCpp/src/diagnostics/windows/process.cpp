@@ -111,18 +111,35 @@ namespace ragii::diagnostics
 
         SetConsoleOutputCP(CP_UTF8);
 
-        char buf[1024] = {0};
+        std::string buf;
+        std::string stock;
+
         while (true) {
-            memset(buf, 0, sizeof(buf));
+            buf.clear();
+            buf.resize(1024);
             DWORD read = 0;
-            BOOL ret = ReadFile(m_StartInfo->StdOutReadPipe, buf, sizeof(buf), &read, nullptr);
+            BOOL ret = ReadFile(m_StartInfo->StdOutReadPipe, buf.data(), buf.size(), &read, nullptr);
             if (!ret || read == 0) {
                 continue;
             }
 
-            // TODO: 行単位で処理するよう直す
-            if (m_StdOutReceivedHandler) {
-                m_StdOutReceivedHandler(buf);
+            std::string tmp = stock + buf;
+            std::string_view sv(tmp);
+            stock.clear();
+
+            int offset = 0;
+            while (true) {
+                int terminator_pos = sv.find_first_of("\r\n", offset);
+                if (terminator_pos == std::string_view::npos) {
+                    stock += std::string(sv.substr(offset));
+                    break;
+                }
+
+                auto line = sv.substr(offset, terminator_pos - offset);
+                if (m_StdOutReceivedHandler) {
+                    m_StdOutReceivedHandler(std::string(line));
+                }
+                offset = sv.find_first_not_of("\r\n", terminator_pos);
             }
 
             std::this_thread::sleep_for(std::chrono::seconds(1));
