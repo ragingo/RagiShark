@@ -2,25 +2,27 @@
 
 #ifdef RAGII_WINDOWS
 
+#include <iostream>
+#include <thread>
+#include <chrono>
+
 #include "diagnostics/process.h"
 
 namespace
 {
-    bool createProcess(std::string_view app, std::vector<std::string_view> args, PROCESS_INFORMATION& pi, STARTUPINFO& si)
-    {
-        args.insert(args.begin(), app);
-        auto commadline = ragii::util::join(" ", args);
+    using namespace ragii::diagnostics;
 
-        si.cb = sizeof(STARTUPINFO);
-        si.wShowWindow = SW_HIDE;
-        si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    bool createProcess(const ProcessStartInfo& psi, PROCESS_INFORMATION& pi, STARTUPINFO& si)
+    {
+        auto cmdline = psi.Args;
+        cmdline.insert(cmdline.begin(), psi.Name);
 
         BOOL ret = CreateProcess(
             nullptr,
-            const_cast<char*>(commadline.c_str()),
+            const_cast<char*>(ragii::util::join(" ", cmdline).c_str()),
             nullptr,
             nullptr,
-            FALSE,
+            TRUE,
             CREATE_NO_WINDOW,
             nullptr,
             nullptr,
@@ -38,12 +40,32 @@ namespace
 
 namespace ragii::diagnostics
 {
-    std::shared_ptr<Process> Process::Start(std::string_view name, std::vector<std::string_view> args)
+    std::shared_ptr<Process> Process::Start(const ProcessStartInfo& psi)
     {
+        ProcessStartInfo startInfo = psi;
         PROCESS_INFORMATION pi = {};
         STARTUPINFO si = {};
+        si.cb = sizeof(STARTUPINFO);
+        si.wShowWindow = SW_HIDE;
 
-        if (!createProcess(name, std::move(args), pi, si)) {
+        if (startInfo.RedirectStdOut || startInfo.RedirectStdErr) {
+            SECURITY_ATTRIBUTES sa = {};
+            sa.bInheritHandle = TRUE;
+            sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+
+            BOOL ret = CreatePipe(&startInfo.StdOutReadPipe, &startInfo.StdOutWritePipe, &sa, 0);
+            if (ret) {
+                si.dwFlags = STARTF_USESTDHANDLES;
+                if (startInfo.RedirectStdOut) {
+                    si.hStdOutput = startInfo.StdOutWritePipe;
+                }
+                if (startInfo.RedirectStdErr) {
+                    si.hStdError = startInfo.StdOutWritePipe; // とりあえずまとめる
+                }
+            }
+        }
+
+        if (!createProcess(psi, pi, si)) {
             return {};
         }
 
@@ -51,7 +73,7 @@ namespace ragii::diagnostics
         ret->m_ProcessId = pi.dwProcessId;
         ret->m_ProcessHandle = pi.hProcess;
         ret->m_ThreadHandle = pi.hThread;
-        ret->m_StdOutHandle = si.hStdOutput;
+        ret->m_StartInfo = std::make_unique<ProcessStartInfo>(startInfo);
 
         return ret;
     }
@@ -66,9 +88,38 @@ namespace ragii::diagnostics
             CloseHandle(m_ThreadHandle);
             m_ThreadHandle = INVALID_HANDLE;
         }
-        if (m_StdOutHandle != INVALID_HANDLE) {
-            CloseHandle(m_StdOutHandle);
-            m_StdOutHandle = INVALID_HANDLE;
+        if (m_StartInfo->StdOutReadPipe != INVALID_HANDLE) {
+            CloseHandle(m_StartInfo->StdOutReadPipe);
+            m_StartInfo->StdOutReadPipe = INVALID_HANDLE;
+        }
+        if (m_StartInfo->StdOutWritePipe != INVALID_HANDLE) {
+            CloseHandle(m_StartInfo->StdOutWritePipe);
+            m_StartInfo->StdOutWritePipe = INVALID_HANDLE;
+        }
+    }
+
+    void Process::debug1()
+    {
+        if (!m_StartInfo->RedirectStdOut) {
+            return;
+        }
+        if (m_StartInfo->StdOutReadPipe == INVALID_HANDLE) {
+            return;
+        }
+
+        SetConsoleOutputCP(CP_UTF8);
+
+        char buf[1024] = {0};
+        while (true) {
+            memset(buf, 0, sizeof(buf));
+            DWORD read = 0;
+            BOOL ret = ReadFile(m_StartInfo->StdOutReadPipe, buf, sizeof(buf), &read, nullptr);
+            if (!ret || read == 0) {
+                continue;
+            }
+            std::cout << buf << std::endl;
+
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }
 }

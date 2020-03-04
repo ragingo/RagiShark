@@ -9,14 +9,17 @@
 
 using namespace ragii::net;
 using namespace ragii::util;
+using namespace ragii::diagnostics;
 
 int main()
 {
-    // std::vector<std::string_view> args = { "-D" };
-    // createProcess("tshark", std::move(args));
-    // createProcess("tshark", { "-D" });
+    ProcessStartInfo psi;
+    psi.Name = "tshark";
+    psi.Args = { "-i", "5" };
+    psi.RedirectStdOut = true;
 
-    auto proc = ragii::diagnostics::Process::Start("tshark", { "-D" });
+    auto proc = ragii::diagnostics::Process::Start(psi);
+    proc->debug1();
 
 
     std::cout << "launch" << std::endl;
