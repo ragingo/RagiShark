@@ -1,6 +1,8 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <mutex>
+#include <deque>
 #include "net/socket.h"
 #include "net/websocket.h"
 #include "util/util.h"
@@ -11,16 +13,21 @@ using namespace ragii::net;
 using namespace ragii::util;
 using namespace ragii::diagnostics;
 
+std::mutex mtx;
+
 int main()
 {
+    std::deque<std::string> sendQueue;
+
     ProcessStartInfo psi;
     psi.Name = "tshark";
-    psi.Args = { "-i", "5" };
+    psi.Args = { "-i 5", "-T ek", "-e frame.number", "-e ip.proto", "-e ip.src", "-e ip.dst", "-e tcp.srcport", "-e tcp.dstport" };
     psi.RedirectStdOut = true;
 
-    auto proc = ragii::diagnostics::Process::Start(psi);
-    proc->setStdOutReceivedHandler([=] (const std::string& s) -> void {
-        std::cout << s << std::endl;
+    auto proc = Process::Start(psi);
+    proc->setStdOutReceivedHandler([&sendQueue] (const std::string& s) -> void {
+        std::lock_guard<std::mutex> lock(mtx);
+        sendQueue.push_back(s);
     });
 
 
@@ -39,10 +46,18 @@ int main()
     ws.setHandlers(handlers);
     ws.initialize();
 
-    std::thread t([&ws]()-> void {
+    std::thread t([&ws, &sendQueue]()-> void {
         while (true) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            ws.sendText("aaa");
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                if (sendQueue.empty()) {
+                    continue;
+                }
+                auto item = sendQueue.front();
+                ws.sendText(std::move(item));
+                sendQueue.pop_front();
+            }
         }
     });
 

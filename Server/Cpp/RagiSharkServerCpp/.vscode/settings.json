@@ -59,6 +59,9 @@
         "xstddef": "cpp",
         "xtr1common": "cpp",
         "*.tcc": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "atomic": "cpp",
+        "deque": "cpp",
+        "mutex": "cpp"
     }
 }

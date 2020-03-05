@@ -41,11 +41,23 @@ namespace ragii::net
         }
         else if (len <= 0xffff) {
             header.resize(4);
-            // TODO:
+            header[0] = (((fin ? 1 : 0) << 7) | static_cast<uint8_t>(opcode));
+            header[1] = 126;
+            header[2] = (len & 0xff00) >> 8;
+            header[3] = len & 0x00ff;
         }
         else if (len == 127) {
             header.resize(10);
-            // TODO:
+            header[0] = (((fin ? 1 : 0) << 7) | static_cast<uint8_t>(opcode));
+            header[1] = 127;
+            header[2] = (len >> 56);
+            header[3] = ((len >> 48) & 0xff);
+            header[4] = ((len >> 40) & 0xff);
+            header[5] = ((len >> 32) & 0xff);
+            header[6] = ((len >> 24) & 0xff);
+            header[7] = ((len >> 16) & 0xff);
+            header[8] = ((len >> 8) & 0xff);
+            header[9] = ((len >> 0) & 0xff);
         }
     }
 }

@@ -127,7 +127,7 @@ namespace ragii::diagnostics
             std::string_view sv(tmp);
             stock.clear();
 
-            int offset = 0;
+            std::string_view::size_type offset = 0;
             while (true) {
                 int terminator_pos = sv.find_first_of("\r\n", offset);
                 if (terminator_pos == std::string_view::npos) {
@@ -140,6 +140,9 @@ namespace ragii::diagnostics
                     m_StdOutReceivedHandler(std::string(line));
                 }
                 offset = sv.find_first_not_of("\r\n", terminator_pos);
+                if (offset == std::string_view::npos) {
+                    break;
+                }
             }
 
             std::this_thread::sleep_for(std::chrono::seconds(1));
