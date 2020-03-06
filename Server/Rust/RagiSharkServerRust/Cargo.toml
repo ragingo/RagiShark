@@ -1,5 +1,5 @@
 [package]
-name = "RagiSharkServerRust"
+name = "ragi_shark_server_rust"
 version = "0.1.0"
 authors = ["ragingo <save.the.world.crush@gmail.com>"]
 edition = "2018"

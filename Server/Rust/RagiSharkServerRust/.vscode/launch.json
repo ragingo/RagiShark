@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'RagiSharkServerRust'",
+            "name": "Debug executable 'ragi_shark_server_rust'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=RagiSharkServerRust",
-                    "--package=RagiSharkServerRust"
+                    "--bin=ragi_shark_server_rust",
+                    "--package=ragi_shark_server_rust"
                 ],
                 "filter": {
-                    "name": "RagiSharkServerRust",
+                    "name": "ragi_shark_server_rust",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'RagiSharkServerRust'",
+            "name": "Debug unit tests in executable 'ragi_shark_server_rust'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=RagiSharkServerRust",
-                    "--package=RagiSharkServerRust"
+                    "--bin=ragi_shark_server_rust",
+                    "--package=ragi_shark_server_rust"
                 ],
                 "filter": {
-                    "name": "RagiSharkServerRust",
+                    "name": "ragi_shark_server_rust",
                     "kind": "bin"
                 }
             },
