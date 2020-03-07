@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 regex = "*"
+sha-1 = "^0.8.2"
+base64 = "^0.11.0"
