@@ -2,14 +2,19 @@ extern crate regex;
 extern crate sha1;
 extern crate base64;
 
+mod platform;
+mod net;
+
+use crate::net::websocket::WebSocketServer;
 use std::io::{Read, Write};
-use std::net::{Ipv4Addr, SocketAddrV4, TcpListener, TcpStream};
+use std::net::{TcpStream};
 use std::process::Command;
 use std::str;
 use regex::Regex;
 use sha1::{Sha1, Digest};
 
 const WS_GUID: &str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
 
 fn on_get_request_received(mut stream: &TcpStream, data: &str) {
     let r = Regex::new("Sec-WebSocket-Key: (.*)").unwrap();
@@ -41,7 +46,15 @@ fn on_get_request_received(mut stream: &TcpStream, data: &str) {
     stream.write_all(send_data.as_bytes()).unwrap();
 }
 
-fn on_received(mut stream: &TcpStream) {
+fn on_connected(mut stream: &TcpStream) {
+    // let mut s = stream;
+    // let _handle = std::thread::spawn(move || {
+    //     loop {
+    //         std::thread::sleep(std::time::Duration::from_millis(500));
+    //         let mut buf: [u8;10];
+    //         s.write_all(&buf);
+    //     }
+    // });
     loop {
         let mut buf = [0; 1024];
         let size = stream.read(&mut buf).unwrap();
@@ -55,23 +68,12 @@ fn on_received(mut stream: &TcpStream) {
     }
 }
 
-#[link(name = "user32")]
-#[allow(non_snake_case)]
-extern {
-    fn MessageBoxA(handle: i32, text: *const u8, caption: *const u8, utype: u32) -> i32;
-}
-
-#[link(name = "kernel32")]
-#[allow(non_snake_case)]
-extern {
-    fn SetConsoleOutputCP(codepage: i32) -> i32;
-}
 
 fn test() {
     if cfg!(windows) {
         unsafe {
-            SetConsoleOutputCP(65001);
-            MessageBoxA(0, "text\0".as_ptr(), "caption\0".as_ptr(), 0);
+            platform::windows::SetConsoleOutputCP(65001);
+            platform::windows::MessageBoxA(0, "text\0".as_ptr(), "caption\0".as_ptr(), 0);
         };
     }
 
@@ -80,19 +82,11 @@ fn test() {
 }
 
 fn main() {
-    test();
+    // test();
 
-    let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8080);
-    let listener = TcpListener::bind(addr).unwrap();
-
-    for stream in listener.incoming() {
-        match stream {
-            Ok(s) => {
-                on_received(&s);
-            },
-            Err(e) => {
-                println!("{}", e);
-            }
-        }
-    }
+    let mut ws = WebSocketServer::new();
+    ws.client_connect_handler = |stream: &mut TcpStream| {
+        on_connected(stream);
+    };
+    ws.listen(8080);
 }
