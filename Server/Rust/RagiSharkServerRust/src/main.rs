@@ -4,6 +4,7 @@ extern crate base64;
 
 use std::io::{Read, Write};
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener, TcpStream};
+use std::process::Command;
 use std::str;
 use regex::Regex;
 use sha1::{Sha1, Digest};
@@ -54,7 +55,33 @@ fn on_received(mut stream: &TcpStream) {
     }
 }
 
+#[link(name = "user32")]
+#[allow(non_snake_case)]
+extern {
+    fn MessageBoxA(handle: i32, text: *const u8, caption: *const u8, utype: u32) -> i32;
+}
+
+#[link(name = "kernel32")]
+#[allow(non_snake_case)]
+extern {
+    fn SetConsoleOutputCP(codepage: i32) -> i32;
+}
+
+fn test() {
+    if cfg!(windows) {
+        unsafe {
+            SetConsoleOutputCP(65001);
+            MessageBoxA(0, "text\0".as_ptr(), "caption\0".as_ptr(), 0);
+        };
+    }
+
+    let output = Command::new("tshark").arg("-D").output().unwrap();
+    println!("{}", str::from_utf8(&output.stdout).unwrap());
+}
+
 fn main() {
+    test();
+
     let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8080);
     let listener = TcpListener::bind(addr).unwrap();
 
