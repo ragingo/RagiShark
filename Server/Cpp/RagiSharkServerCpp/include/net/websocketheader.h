@@ -46,7 +46,7 @@ namespace ragii::net
             header[2] = (len & 0xff00) >> 8;
             header[3] = len & 0x00ff;
         }
-        else if (len == 127) {
+        else {
             header.resize(10);
             header[0] = (((fin ? 1 : 0) << 7) | static_cast<uint8_t>(opcode));
             header[1] = 127;
