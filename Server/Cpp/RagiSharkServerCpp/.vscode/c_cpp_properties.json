@@ -4,7 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\include\\*",
+                "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.26.28801\\include\\*",
                 "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\shared",
                 "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\ucrt",
                 "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\um",
@@ -17,7 +17,7 @@
                 "_HAS_CXX17"
             ],
             "windowsSdkVersion": "10.0.18362.0",
-            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.24.28314/bin/Hostx64/x64/cl.exe",
+            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.26.28801/bin/Hostx64/x64/cl.exe",
             "compilerArgs": [],
             "cStandard": "c11",
             "cppStandard": "c++17",
@@ -26,7 +26,7 @@
             "browse": {
                 "path": [
                     "${workspaceFolder}/**",
-                    "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.24.28314\\include\\*",
+                    "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.26.28801\\include\\*",
                     "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\shared",
                     "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\ucrt",
                     "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\um",
