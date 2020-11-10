@@ -69,9 +69,11 @@ function loadPlugins() {
   let plugins = [
     new WebpackBar(),
     new CleanWebpackPlugin(),
-    new CopyWebpackPlugin([
-      { from: getFullPath('./src/index.html'), to: '' },
-    ]),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: getFullPath('./src/index.html'), to: '' }
+      ]
+    }),
     loadPlugin(process.env.BUILD_ANALYZE, () => new DuplicatePackageCheckerPlugin({ verbose: true, emitError: true })),
   ];
   return plugins.filter(x => x !== null);
