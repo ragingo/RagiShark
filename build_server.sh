@@ -1,7 +1,13 @@
 #!/bin/bash
 
-set -eu
+set -eux
 
-APP=./Server/CSharp/RagiSharkServerCS
+PROJ_DIR=./Server/CSharp/RagiSharkServerCS
 
-dotnet build -c Debug --force --no-incremental --no-restore --nologo -v normal $APP
+pushd $PROJ_DIR
+
+dotnet clean
+dotnet restore
+dotnet build -c Debug --force --no-incremental --no-restore --nologo -v normal
+
+popd
