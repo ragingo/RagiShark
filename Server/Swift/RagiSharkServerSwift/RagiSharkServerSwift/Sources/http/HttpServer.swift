@@ -6,9 +6,12 @@
 //
 
 import Foundation
+import CryptoKit
 
 class HttpServer {
     private let tcpServer: TcpServer?
+    private let websocketServer: WebSocketServer = .init()
+    private static let webSocketGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
     init?(port: Int) {
         guard let tcpServer = TcpServer(host: .any, port: port) else {
@@ -25,33 +28,49 @@ class HttpServer {
     }
 
     private func onClientConnected(connection: SocketConnection) {
-        print("connected!")
+        print("[HttpServer] connected!")
 
         while true {
             let (length, data) = connection.receive()
             if length <= 0 {
-                break
+                continue
             }
             guard let data = data else {
-                break
-            }
-            guard let str = String(bytes: data, encoding: .utf8) else {
                 continue
             }
-            print("received!")
 
-            guard let headers = parseRequest(string: str) else {
-                continue
-            }
-            if headers["upgrade"] == "websocket" {
-                // WebSocket
-                let websocketVersion = headers["sec-websocket-version"]
-                let websocketKey = headers["sec-websocket-key"]
-                print("websocket version: \(websocketVersion), key: \(websocketKey)")
+            let str = String(decoding: data, as: UTF8.self)
+            if isValidRequestLine(string: str) {
+                onHttpRequestReceived(request: str, connection: connection)
             } else {
-                // HTTP
+                onDataReceived(data: data, connection: connection)
             }
         }
+    }
+
+    private func onHttpRequestReceived(request: String, connection: SocketConnection) {
+        guard let headers = parseRequest(string: request) else {
+            return
+        }
+
+        if headers["upgrade"] == "websocket" {
+            //let version = headers["sec-websocket-version"] ?? ""
+            let key = (headers["sec-websocket-key"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let data = (key + Self.webSocketGuid).data(using: .utf8) else { return }
+            let hash = Insecure.SHA1.hash(data: data)
+            let hashString = Data(hash).base64EncodedString()
+            let responseHeaders =
+                "HTTP/1.1 101 Switching Protocols\r\n" +
+                "Connection: Upgrade\r\n" +
+                "Upgrade: websocket\r\n" +
+                "Sec-WebSocket-Accept: \(hashString)\r\n" +
+                "\r\n"
+            _ = connection.send(string: responseHeaders)
+        }
+    }
+
+    private func onDataReceived(data: Data, connection: SocketConnection) {
+
     }
 
     typealias Headers = [String: String]

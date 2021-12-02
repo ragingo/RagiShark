@@ -24,6 +24,7 @@ class Socket {
         let addressFamily = AddressFamily.internetwork.rawValue
         handle = socket(addressFamily, socketType.rawValue, 0)
         guard !handle.isInvalid else {
+            print("[Socket] socket failed.")
             return false
         }
 
@@ -40,6 +41,7 @@ class Socket {
             }
         }
         guard ret == 0 else {
+            print("[Socket] bind failed.")
             return false
         }
 
@@ -57,6 +59,7 @@ class Socket {
 
         let sock = SocketHandle(Darwin.accept(handle, &addr, &length))
         if sock.isInvalid {
+            print("[Socket] accept failed.")
             return nil
         }
 

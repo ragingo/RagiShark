@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		52132979272EC90B00F9D74E /* WebSocketServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52132978272EC90B00F9D74E /* WebSocketServer.swift */; };
 		525D54D326FCBB5D00957231 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525D54D226FCBB5D00957231 /* main.swift */; };
 		525D54DF26FCBBFC00957231 /* AddressFamily.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525D54DE26FCBBFC00957231 /* AddressFamily.swift */; };
 		525D54E126FCBC1B00957231 /* IPv4Address.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525D54E026FCBC1B00957231 /* IPv4Address.swift */; };
@@ -31,6 +32,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		52132978272EC90B00F9D74E /* WebSocketServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketServer.swift; sourceTree = "<group>"; };
 		525D54CF26FCBB5D00957231 /* RagiSharkServerSwift */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RagiSharkServerSwift; sourceTree = BUILT_PRODUCTS_DIR; };
 		525D54D226FCBB5D00957231 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		525D54DE26FCBBFC00957231 /* AddressFamily.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressFamily.swift; sourceTree = "<group>"; };
@@ -54,6 +56,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		52132977272EC8FB00F9D74E /* websocket */ = {
+			isa = PBXGroup;
+			children = (
+				52132978272EC90B00F9D74E /* WebSocketServer.swift */,
+			);
+			path = websocket;
+			sourceTree = "<group>";
+		};
 		525D54C626FCBB5D00957231 = {
 			isa = PBXGroup;
 			children = (
@@ -81,6 +91,7 @@
 		525D54D926FCBBB500957231 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				52132977272EC8FB00F9D74E /* websocket */,
 				525D54DD26FCBBE000957231 /* http */,
 				525D54DC26FCBBD800957231 /* socket */,
 				525D54DB26FCBBD100957231 /* tcp */,
@@ -154,7 +165,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1300;
-				LastUpgradeCheck = 1300;
+				LastUpgradeCheck = 1320;
 				TargetAttributes = {
 					525D54CE26FCBB5D00957231 = {
 						CreatedOnToolsVersion = 13.0;
@@ -188,6 +199,7 @@
 				525D54DF26FCBBFC00957231 /* AddressFamily.swift in Sources */,
 				525D54E926FCBC9300957231 /* Socket.swift in Sources */,
 				525D54E126FCBC1B00957231 /* IPv4Address.swift in Sources */,
+				52132979272EC90B00F9D74E /* WebSocketServer.swift in Sources */,
 				525D54E326FCBC4E00957231 /* SocketType.swift in Sources */,
 				525D54ED26FCBCCE00957231 /* HttpServer.swift in Sources */,
 				525D54E726FCBC8200957231 /* SocketCommonTypes.swift in Sources */,
@@ -317,6 +329,7 @@
 		525D54D726FCBB5D00957231 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -326,6 +339,7 @@
 		525D54D826FCBB5D00957231 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
