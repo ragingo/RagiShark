@@ -8,11 +8,11 @@
 import Foundation
 
 func main() {
-    guard let httpServer = HttpServer(port: 9877) else {
+    guard let server = WebSocketServer(port: 9877) else {
         exit(EXIT_FAILURE)
     }
 
-    guard httpServer.start() else {
+    if !server.start() {
         exit(EXIT_FAILURE)
     }
 

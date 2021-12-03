@@ -6,12 +6,16 @@
 //
 
 import Foundation
-import CryptoKit
+
+protocol HttpServerDelegate {
+    func websocketClientHandshakeRequest(_ httpServer: HttpServer, version: String, key:String, connection: SocketConnection)
+    func websocketDataFrameReceived(_ httpServer: HttpServer, data: Data)
+}
 
 class HttpServer {
     private let tcpServer: TcpServer?
-    private let websocketServer: WebSocketServer = .init()
-    private static let webSocketGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
+    var delegate: HttpServerDelegate?
 
     init?(port: Int) {
         guard let tcpServer = TcpServer(host: .any, port: port) else {
@@ -43,7 +47,7 @@ class HttpServer {
             if isValidRequestLine(string: str) {
                 onHttpRequestReceived(request: str, connection: connection)
             } else {
-                onDataReceived(data: data, connection: connection)
+                onDataFrameReceived(data: data)
             }
         }
     }
@@ -54,23 +58,14 @@ class HttpServer {
         }
 
         if headers["upgrade"] == "websocket" {
-            //let version = headers["sec-websocket-version"] ?? ""
+            let version = headers["sec-websocket-version"] ?? ""
             let key = (headers["sec-websocket-key"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let data = (key + Self.webSocketGuid).data(using: .utf8) else { return }
-            let hash = Insecure.SHA1.hash(data: data)
-            let hashString = Data(hash).base64EncodedString()
-            let responseHeaders =
-                "HTTP/1.1 101 Switching Protocols\r\n" +
-                "Connection: Upgrade\r\n" +
-                "Upgrade: websocket\r\n" +
-                "Sec-WebSocket-Accept: \(hashString)\r\n" +
-                "\r\n"
-            _ = connection.send(string: responseHeaders)
+            delegate?.websocketClientHandshakeRequest(self, version: version, key: key, connection: connection)
         }
     }
 
-    private func onDataReceived(data: Data, connection: SocketConnection) {
-
+    private func onDataFrameReceived(data: Data) {
+        delegate?.websocketDataFrameReceived(self, data: data)
     }
 
     typealias Headers = [String: String]
