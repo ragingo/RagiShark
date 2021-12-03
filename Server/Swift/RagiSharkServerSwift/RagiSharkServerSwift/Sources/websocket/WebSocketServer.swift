@@ -63,7 +63,7 @@ private extension WebSocketServer {
         let data = data.subdata(in: .init(uncheckedBounds: (lower: dataOffset, upper: data.count)))
         var bytes = [UInt8](repeating: 0, count: data.count)
         data.enumerated().forEach { i, value in
-            bytes[i] = (data[i] ^ maskingKey[i % 4])
+            bytes[i] = (value ^ maskingKey[i % 4])
         }
 
         return String(bytes: bytes, encoding: .utf8) ?? "a"

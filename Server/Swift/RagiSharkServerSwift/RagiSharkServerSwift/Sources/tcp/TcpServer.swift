@@ -13,7 +13,7 @@ class TcpServer {
     private let serverSocket: Socket
 
     typealias ConnectionHandler = (SocketConnection) -> Void
-    var onConnected: (ConnectionHandler)? = nil
+    var onConnected: (ConnectionHandler)?
 
     init?(host: IPv4Address, port: Int) {
         if port < 0 {
