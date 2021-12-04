@@ -6,7 +6,7 @@ import { isGetIFListCommandMessage, isPacketMessage, MessageFormat, PacketMessag
 
 const MAX_RENDER_PACKET_COUNT = 500;
 const RECEIVED_PACKET_QUEUE_CHECK_INTERVAL = 50;
-const WS_SERVER_URL = 'ws://127.0.0.1:8080';
+const WS_SERVER_URL = process.env.WS_SERVER_URL || '';
 
 type NicInfo = {
   no: number;

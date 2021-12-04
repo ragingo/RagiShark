@@ -1,6 +1,7 @@
 const Path = require('path');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const Dotenv = require('dotenv-webpack');
 const DuplicatePackageCheckerPlugin = require("duplicate-package-checker-webpack-plugin");
 const WebpackBar = require('webpackbar');
 
@@ -67,6 +68,7 @@ module.exports = {
 
 function loadPlugins() {
   let plugins = [
+    new Dotenv(),
     new WebpackBar(),
     new CleanWebpackPlugin(),
     new CopyWebpackPlugin({
