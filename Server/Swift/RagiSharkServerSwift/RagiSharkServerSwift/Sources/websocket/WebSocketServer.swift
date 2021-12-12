@@ -27,6 +27,22 @@ class WebSocketServer {
     func start() -> Bool {
         httpServer?.start() ?? false
     }
+
+    func send(text: String) -> Bool {
+        guard let connection = connection else {
+            return false
+        }
+        guard let data = text.data(using: .utf8) else {
+            return false
+        }
+        let header = WebSocketHeader(fin: true, opCode: .text, payloadLength: data.count)
+
+        var bytes = Data()
+        bytes.append(header.toBinary())
+        bytes.append(data)
+
+        return connection.send(data: bytes)
+    }
 }
 
 extension WebSocketServer: HttpServerDelegate {

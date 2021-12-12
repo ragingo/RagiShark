@@ -9,11 +9,13 @@ import Foundation
 
 class App {
     private let tshark = TShark()
+    private var server: WebSocketServer?
 
     func run() {
         guard let server = WebSocketServer(port: 9877) else {
             exit(EXIT_FAILURE)
         }
+        self.server = server
         server.delegate = self
 
         if !server.start() {
@@ -43,5 +45,23 @@ extension App: WebSocketServerDelegate {
         let interfaces = tshark.interfaces()
         print("[App:onGetIFList] interfaces")
         print(interfaces)
+
+        // TODO: json encoder
+        var sendText = ""
+        sendText += " { "
+        sendText += #" "type": "get_if_list_response", "#
+        sendText += #" "data": [ "#
+        interfaces.enumerated().forEach { i, interface in
+            if i > 0 {
+                sendText += ","
+            }
+            sendText += #" { "no": $no, "name": "$name" } "#
+                .replacingOccurrences(of: "$no", with: "\(i + 1)")
+                .replacingOccurrences(of: "$name", with: interface)
+        }
+        sendText += #" ] "#
+        sendText += #" } "#
+
+        server?.send(text: sendText)
     }
 }

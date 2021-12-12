@@ -23,6 +23,16 @@ class SocketConnection {
         handle = socketInvalidHandle
     }
 
+    func send(data: Data) -> Bool {
+        guard !handle.isInvalid else { return false }
+        let ret = data.withUnsafeBytes { ptr -> Int in
+            guard let baseAddr = ptr.baseAddress else {
+                return -1
+            }
+            return Darwin.send(handle, baseAddr, data.count, 0)
+        }
+        return ret > 0
+    }
 
     func send(string: String) -> Bool {
         guard !handle.isInvalid else { return false }
