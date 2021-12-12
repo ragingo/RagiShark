@@ -8,10 +8,16 @@
 import Foundation
 import CryptoKit
 
+protocol WebSocketServerDelegate {
+    func received(_ webSocketServer: WebSocketServer, text: String)
+}
+
 class WebSocketServer {
     private static let webSocketGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     private let httpServer: HttpServer?
     private var connection: SocketConnection?
+
+    var delegate: WebSocketServerDelegate?
 
     init?(port: Int) {
         httpServer = HttpServer(port: port)
@@ -45,10 +51,9 @@ extension WebSocketServer: HttpServerDelegate {
     func websocketDataFrameReceived(_ httpServer: HttpServer, data: Data) {
         print("[WebSocketServer] data frame received")
         let header = WebSocketHeader.parse(from: data)
-        print(header)
         if header.mask {
             let decodedText = Self.decodeText(from: data)
-            print(decodedText)
+            delegate?.received(self, text: decodedText)
         }
     }
 }
@@ -66,6 +71,6 @@ private extension WebSocketServer {
             bytes[i] = (value ^ maskingKey[i % 4])
         }
 
-        return String(bytes: bytes, encoding: .utf8) ?? "a"
+        return String(bytes: bytes, encoding: .utf8) ?? ""
     }
 }
