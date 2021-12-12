@@ -1,14 +1,20 @@
-#include "net/socket.h"
+#include "common/common.h"
 
+#ifdef RAGII_MAC
+
+#include "net/socket.h"
 #include <array>
 #include <cstdint>
-#include <WinSock2.h>
-#include <WS2tcpip.h>
-#pragma comment(lib,"ws2_32")
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 namespace
 {
     using namespace ragii::net;
+
+    constexpr int INVALID_SOCKET = -1;
 
     uint64_t convertINADDR(Socket::INADDR inaddr)
     {
@@ -40,29 +46,21 @@ namespace ragii::net
 
     bool Socket::initialize()
     {
-        WSADATA data;
-        int ret = WSAStartup(MAKEWORD(2, 2), &data);
-        s_Initialized = ret == 0;
-        return ret == 0;
+        return true;
     }
 
     void Socket::uninitialize()
     {
-        WSACleanup();
     }
 
     std::string Socket::getLastError()
     {
-        int err = WSAGetLastError();
-        const int buf_size = 512;
-        char buf[buf_size] = {0};
-        FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, err, 0, buf, buf_size, nullptr);
-        return std::string(buf);
+        return std::string(strerror(errno));
     }
 
     bool Socket::bind(INADDR inaddr, int port)
     {
-        SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);
+        auto sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock == INVALID_SOCKET) {
             return false;
         }
@@ -91,8 +89,8 @@ namespace ragii::net
     bool Socket::accept()
     {
         sockaddr_in addr = {};
-        int len = sizeof(sockaddr_in);
-        SOCKET sock = ::accept(m_ServerSocket, reinterpret_cast<sockaddr*>(&addr), &len);
+        socklen_t len = sizeof(sockaddr_in);
+        auto sock = ::accept(m_ServerSocket, reinterpret_cast<sockaddr*>(&addr), &len);
         if (sock == INVALID_SOCKET) {
             return false;
         }
@@ -136,8 +134,10 @@ namespace ragii::net
         if (m_Socket == INVALID_SOCKET) {
             return;
         }
-        ::shutdown(m_Socket, SD_BOTH);
-        ::closesocket(m_Socket);
+        ::shutdown(m_Socket, SHUT_RDWR);
+        ::close(m_Socket);
         m_Socket = INVALID_SOCKET;
     }
 }
+
+#endif

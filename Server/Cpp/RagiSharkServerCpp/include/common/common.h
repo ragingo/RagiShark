@@ -10,4 +10,8 @@
 #define NOMINMAX
 #include <Windows.h>
 
+#elif defined(__APPLE__) || defined(TARGET_OS_MAC)
+
+#define RAGII_MAC
+
 #endif

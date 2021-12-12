@@ -1,7 +1,8 @@
-#include "util/util.h"
+#include "common/common.h"
 
 #ifdef RAGII_WINDOWS
 
+#include "util/util.h"
 #include <iostream>
 #include <wincrypt.h>
 #pragma comment(lib, "crypt32")

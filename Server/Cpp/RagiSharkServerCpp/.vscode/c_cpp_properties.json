@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "Win32 (C++17)",
             "includePath": [
                 "${workspaceFolder}/**",
                 "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.26.28801\\include\\*",
@@ -9,7 +9,7 @@
                 "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\ucrt",
                 "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\um",
                 "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\winrt"
-        ],
+            ],
             "defines": [
                 "_DEBUG",
                 "_WINDOWS",
@@ -43,18 +43,22 @@
             "defines": [
                 "_DEBUG"
             ],
-            "compilerPath": "/usr/bin/gcc",
+            "compilerPath": "/usr/bin/clang++",
             "compilerArgs": [],
             "cStandard": "c11",
-            "cppStandard": "c++17",
-            "intelliSenseMode": "clang-x64",
+            "cppStandard": "c++20",
+            "macFrameworkPath": [
+                "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks"
+            ],
+            "intelliSenseMode": "macos-clang-arm64",
             "browse": {
                 "path": [
                     "${workspaceFolder}/**"
                 ],
                 "limitSymbolsToIncludedHeaders": true
             },
-            "configurationProvider": "ms-vscode.cmake-tools"
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "mergeConfigurations": true
         }
     ],
     "version": 4

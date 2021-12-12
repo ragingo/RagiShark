@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/bin/bash -eu
 
-pushd build
-rm -rf *
+pushd build > /dev/null
+rm -rf ./*
 
 cmake -G Ninja ../
 ninja
 
-popd
+popd > /dev/null

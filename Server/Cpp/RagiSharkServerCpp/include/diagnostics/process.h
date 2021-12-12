@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <thread>
 #include "common/common.h"
 
 namespace ragii::diagnostics

@@ -96,7 +96,7 @@ namespace ragii::net
 
     void WebSocket::onMessageReceived(std::string_view msg)
     {
-        if (msg._Starts_with("GET /")) { // 良くないけどあったから使おう・・・
+        if (msg.starts_with("GET /")) {
             onGetRequestReceived(msg);
         }
         else {
