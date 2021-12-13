@@ -21,6 +21,7 @@ class Socket {
     }
 
     func bind() -> Bool {
+        print("[Socket] start bind().")
         let addressFamily = AddressFamily.internetwork.rawValue
         handle = socket(addressFamily, socketType.rawValue, 0)
         guard !handle.isInvalid else {
@@ -49,11 +50,13 @@ class Socket {
     }
 
     func listen() -> Bool {
+        print("[Socket] start listen().")
         let ret = Darwin.listen(handle, 5)
         return ret == 0
     }
 
     func accept() -> SocketConnection? {
+        print("[Socket] start accept().")
         var addr = sockaddr()
         var length = UInt32(MemoryLayout<sockaddr_in>.size)
 

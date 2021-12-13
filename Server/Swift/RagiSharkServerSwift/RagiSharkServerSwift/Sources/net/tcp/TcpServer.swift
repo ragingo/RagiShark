@@ -23,6 +23,7 @@ class TcpServer {
     }
 
     func start() -> Bool {
+        print("[TcpServer] start")
         guard serverSocket.bind() else {
             return false
         }

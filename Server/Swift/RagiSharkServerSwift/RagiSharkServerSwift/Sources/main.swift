@@ -7,5 +7,10 @@
 
 import Foundation
 
-let app = App()
-app.run()
+func main() {
+    let arguments = ["-p": "9877"] // TODO: CommandLine.arguments
+    let app = App()
+    app.run(arguments: arguments)
+}
+
+main()

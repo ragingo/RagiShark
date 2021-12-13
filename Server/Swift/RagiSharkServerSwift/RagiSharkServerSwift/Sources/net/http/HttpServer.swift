@@ -26,6 +26,7 @@ class HttpServer {
     }
 
     func start() -> Bool {
+        print("[HttpServer] start")
         guard let tcpServer = tcpServer else { return false }
         guard tcpServer.start() else { return false }
         return true

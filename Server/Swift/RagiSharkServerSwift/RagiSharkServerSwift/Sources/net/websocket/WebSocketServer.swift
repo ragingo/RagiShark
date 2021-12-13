@@ -25,7 +25,8 @@ class WebSocketServer {
     }
 
     func start() -> Bool {
-        httpServer?.start() ?? false
+        print("[WebSocketServer] start")
+        return httpServer?.start() ?? false
     }
 
     func send(data: Data) -> Bool {

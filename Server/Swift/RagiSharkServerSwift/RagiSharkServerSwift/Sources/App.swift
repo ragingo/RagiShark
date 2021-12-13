@@ -10,8 +10,11 @@ import Foundation
 class App {
     private let tshark = TShark()
 
-    func run() {
-        guard let server = WebSocketServer(port: 9877) else {
+    func run(arguments: [String: String]) {
+        guard let listenPort = Int(arguments["-p"] ?? "8888") else {
+            exit(EXIT_FAILURE)
+        }
+        guard let server = WebSocketServer(port: listenPort) else {
             exit(EXIT_FAILURE)
         }
         server.delegate = self
