@@ -31,6 +31,15 @@ enum RagiSharkClientMessage: String {
     case getIFList = "get if list"
 }
 
+struct Interface: Encodable {
+    let no: Int
+    let name: String
+}
+struct GetInterfaceListResponse: Encodable {
+    let type = "get_if_list_response"
+    let data: [Interface]
+}
+
 extension App: WebSocketServerDelegate {
     func received(_ webSocketServer: WebSocketServer, text: String) {
         switch RagiSharkClientMessage(rawValue: text) {
@@ -42,26 +51,22 @@ extension App: WebSocketServerDelegate {
     }
 
     private func onGetIFList() {
-        let interfaces = tshark.interfaces()
         print("[App:onGetIFList] interfaces")
-        print(interfaces)
 
-        // TODO: json encoder
-        var sendText = ""
-        sendText += " { "
-        sendText += #" "type": "get_if_list_response", "#
-        sendText += #" "data": [ "#
-        interfaces.enumerated().forEach { i, interface in
-            if i > 0 {
-                sendText += ","
-            }
-            sendText += #" { "no": $no, "name": "$name" } "#
-                .replacingOccurrences(of: "$no", with: "\(i + 1)")
-                .replacingOccurrences(of: "$name", with: interface)
+        let interfaces = tshark.interfaces().enumerated().map { i, interface in
+            Interface(no: i + 1, name: interface)
         }
-        sendText += #" ] "#
-        sendText += #" } "#
 
-        server?.send(text: sendText)
+        let response = GetInterfaceListResponse(data:interfaces)
+        let sendText: String
+        do {
+            let json = try JSONEncoder().encode(response)
+            sendText = String(data: json, encoding: .utf8) ?? "" // TODO: Data をそのまま送信する
+        } catch {
+            print(error)
+            return
+        }
+
+        _ = server?.send(text: sendText)
     }
 }
