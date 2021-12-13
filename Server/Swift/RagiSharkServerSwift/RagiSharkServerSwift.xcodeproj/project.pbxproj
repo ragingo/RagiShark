@@ -74,6 +74,18 @@
 			path = websocket;
 			sourceTree = "<group>";
 		};
+		521329822766C4A200F9D74E /* net */ = {
+			isa = PBXGroup;
+			children = (
+				525D54DD26FCBBE000957231 /* http */,
+				525D54DA26FCBBC900957231 /* ip */,
+				525D54DC26FCBBD800957231 /* socket */,
+				525D54DB26FCBBD100957231 /* tcp */,
+				52132977272EC8FB00F9D74E /* websocket */,
+			);
+			path = net;
+			sourceTree = "<group>";
+		};
 		525D54C626FCBB5D00957231 = {
 			isa = PBXGroup;
 			children = (
@@ -101,11 +113,7 @@
 		525D54D926FCBBB500957231 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				52132977272EC8FB00F9D74E /* websocket */,
-				525D54DD26FCBBE000957231 /* http */,
-				525D54DC26FCBBD800957231 /* socket */,
-				525D54DB26FCBBD100957231 /* tcp */,
-				525D54DA26FCBBC900957231 /* ip */,
+				521329822766C4A200F9D74E /* net */,
 				525D54D226FCBB5D00957231 /* App.swift */,
 				5213297E2765F0FE00F9D74E /* main.swift */,
 				52132980276604EE00F9D74E /* TShark.swift */,
