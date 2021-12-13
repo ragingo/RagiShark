@@ -13,6 +13,7 @@
 		5213297F2765F0FE00F9D74E /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5213297E2765F0FE00F9D74E /* main.swift */; };
 		52132981276604EE00F9D74E /* TShark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52132980276604EE00F9D74E /* TShark.swift */; };
 		521329852767773600F9D74E /* GetInterfaceListResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521329842767773600F9D74E /* GetInterfaceListResponse.swift */; };
+		52132989276782C400F9D74E /* Process.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52132988276782C400F9D74E /* Process.swift */; };
 		525D54D326FCBB5D00957231 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525D54D226FCBB5D00957231 /* App.swift */; };
 		525D54DF26FCBBFC00957231 /* AddressFamily.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525D54DE26FCBBFC00957231 /* AddressFamily.swift */; };
 		525D54E126FCBC1B00957231 /* IPv4Address.swift in Sources */ = {isa = PBXBuildFile; fileRef = 525D54E026FCBC1B00957231 /* IPv4Address.swift */; };
@@ -43,6 +44,7 @@
 		5213297E2765F0FE00F9D74E /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		52132980276604EE00F9D74E /* TShark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TShark.swift; sourceTree = "<group>"; };
 		521329842767773600F9D74E /* GetInterfaceListResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetInterfaceListResponse.swift; sourceTree = "<group>"; };
+		52132988276782C400F9D74E /* Process.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Process.swift; sourceTree = "<group>"; };
 		525D54CF26FCBB5D00957231 /* RagiSharkServerSwift */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RagiSharkServerSwift; sourceTree = BUILT_PRODUCTS_DIR; };
 		525D54D226FCBB5D00957231 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		525D54DE26FCBBFC00957231 /* AddressFamily.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressFamily.swift; sourceTree = "<group>"; };
@@ -144,6 +146,7 @@
 				525D54D226FCBB5D00957231 /* App.swift */,
 				5213297E2765F0FE00F9D74E /* main.swift */,
 				52132980276604EE00F9D74E /* TShark.swift */,
+				52132988276782C400F9D74E /* Process.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -249,6 +252,7 @@
 				525D54DF26FCBBFC00957231 /* AddressFamily.swift in Sources */,
 				525D54E926FCBC9300957231 /* Socket.swift in Sources */,
 				525D54E126FCBC1B00957231 /* IPv4Address.swift in Sources */,
+				52132989276782C400F9D74E /* Process.swift in Sources */,
 				5213297D275A6BCF00F9D74E /* WebSocketHeader.swift in Sources */,
 				52132979272EC90B00F9D74E /* WebSocketServer.swift in Sources */,
 				525D54E326FCBC4E00957231 /* SocketType.swift in Sources */,

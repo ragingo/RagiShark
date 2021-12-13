@@ -10,91 +10,32 @@ import Foundation
 final class TShark {
     private static let appPath = "/Applications/Wireshark.app/Contents/MacOS/tshark"
 
-    private var process = Process()
-    private var pipe = Pipe()
+    private let process = Process(applicationPath: appPath)
 
-    typealias Arguments = [String]
-    typealias QueueItem = Arguments
-
-    private var runQueue: [QueueItem] = []
-
-    var isRunning: Bool {
-        process.isRunning
+    private func run(arguments: [String], completion: (() -> Void)? = nil) {
+        process.runCompletionHandler = completion
+        process.run(arguments: arguments)
     }
 
-    init() {
-        setupProcess()
-    }
-
-    private func setupProcess() {
-        pipe = Pipe()
-        process.executableURL = URL(fileURLWithPath: Self.appPath)
-        process.standardOutput = pipe
-        process.terminationHandler = onTerminated(process:)
-    }
-
-    private func onTerminated(process: Process) {
-        if process.isRunning {
-            return
-        }
-
-        var slice = ArraySlice(runQueue)
-        guard let arguments = slice.popFirst() else {
-            return
-        }
-
-        self.process = Process()
-        self.process.arguments = arguments
-        setupProcess()
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
+    func interfaces(completion: @escaping ([String]) -> Void) {
+        run(arguments: ["-D"]) { [weak self] in
+            guard let self = self else {
+                return
+            }
+            let stdout = self.process.readStandardOutput()
+            let interfaces = self.parseInterfaceListString(string: stdout)
+            completion(interfaces)
         }
     }
 
-    private func run(arguments: [String]) -> Bool {
-        if process.isRunning {
-            runQueue.append(arguments)
-            process.terminate()
-            return true
-        }
-
-        process = Process()
-        process.arguments = arguments
-        setupProcess()
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-            return true
-        } catch {
-            return false
-        }
-    }
-
-    private func readStandardOutput() -> String {
-        guard let data = try? pipe.fileHandleForReading.readToEnd() else {
-            return ""
-        }
-        let text = String(data: data, encoding: .utf8) ?? ""
-        return text
-    }
-
-    func interfaces() -> [String] {
-        if !run(arguments: ["-D"]) {
-            return []
-        }
-
+    private func parseInterfaceListString(string: String) -> [String] {
         guard let regex = try? NSRegularExpression(pattern: #"^(\d+)\. (.+)$"#) else {
             return []
         }
 
         var interfaces: [String] = []
-        let stdout = readStandardOutput()
 
-        stdout.enumerateLines { line, _ in
+        string.enumerateLines { line, _ in
             let matches = regex.matches(in: line, options: [], range: .init(location: 0, length: line.count))
             matches.forEach { result in
                 let nsrange = result.range(at: 2)

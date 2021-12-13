@@ -38,19 +38,21 @@ extension App: WebSocketServerDelegate {
     private func onGetIFList(_ webSocketServer: WebSocketServer) {
         print("[App:onGetIFList] interfaces")
 
-        let interfaces = tshark.interfaces().enumerated().map { i, interface in
-            Interface(no: i + 1, name: interface)
-        }
+        tshark.interfaces {
+            let interfaces = $0.enumerated().map { i, interface in
+                Interface(no: i + 1, name: interface)
+            }
 
-        let response = GetInterfaceListResponse(data:interfaces)
-        let data: Data
-        do {
-            data = try JSONEncoder().encode(response)
-        } catch {
-            print(error)
-            return
-        }
+            let response = GetInterfaceListResponse(data: interfaces)
+            let data: Data
+            do {
+                data = try JSONEncoder().encode(response)
+            } catch {
+                print(error)
+                return
+            }
 
-        _ = webSocketServer.send(data: data)
+            _ = webSocketServer.send(data: data)
+        }
     }
 }
