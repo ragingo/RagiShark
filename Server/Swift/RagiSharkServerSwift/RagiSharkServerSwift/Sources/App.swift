@@ -9,13 +9,11 @@ import Foundation
 
 class App {
     private let tshark = TShark()
-    private var server: WebSocketServer?
 
     func run() {
         guard let server = WebSocketServer(port: 9877) else {
             exit(EXIT_FAILURE)
         }
-        self.server = server
         server.delegate = self
 
         if !server.start() {
@@ -27,30 +25,17 @@ class App {
     }
 }
 
-enum RagiSharkClientMessage: String {
-    case getIFList = "get if list"
-}
-
-struct Interface: Encodable {
-    let no: Int
-    let name: String
-}
-struct GetInterfaceListResponse: Encodable {
-    let type = "get_if_list_response"
-    let data: [Interface]
-}
-
 extension App: WebSocketServerDelegate {
     func received(_ webSocketServer: WebSocketServer, text: String) {
-        switch RagiSharkClientMessage(rawValue: text) {
-        case .getIFList:
-            onGetIFList()
+        switch text {
+        case "get if list":
+            onGetIFList(webSocketServer)
         default:
             break
         }
     }
 
-    private func onGetIFList() {
+    private func onGetIFList(_ webSocketServer: WebSocketServer) {
         print("[App:onGetIFList] interfaces")
 
         let interfaces = tshark.interfaces().enumerated().map { i, interface in
@@ -58,15 +43,14 @@ extension App: WebSocketServerDelegate {
         }
 
         let response = GetInterfaceListResponse(data:interfaces)
-        let sendText: String
+        let data: Data
         do {
-            let json = try JSONEncoder().encode(response)
-            sendText = String(data: json, encoding: .utf8) ?? "" // TODO: Data をそのまま送信する
+            data = try JSONEncoder().encode(response)
         } catch {
             print(error)
             return
         }
 
-        _ = server?.send(text: sendText)
+        _ = webSocketServer.send(data: data)
     }
 }

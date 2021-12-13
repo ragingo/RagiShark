@@ -28,11 +28,8 @@ class WebSocketServer {
         httpServer?.start() ?? false
     }
 
-    func send(text: String) -> Bool {
+    func send(data: Data) -> Bool {
         guard let connection = connection else {
-            return false
-        }
-        guard let data = text.data(using: .utf8) else {
             return false
         }
         let header = WebSocketHeader(fin: true, opCode: .text, payloadLength: data.count)
@@ -42,6 +39,13 @@ class WebSocketServer {
         bytes.append(data)
 
         return connection.send(data: bytes)
+    }
+
+    func send(text: String) -> Bool {
+        guard let data = text.data(using: .utf8) else {
+            return false
+        }
+        return send(data: data)
     }
 }
 
