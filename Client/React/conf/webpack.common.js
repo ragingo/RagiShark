@@ -3,7 +3,6 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const Dotenv = require('dotenv-webpack');
 const DuplicatePackageCheckerPlugin = require("duplicate-package-checker-webpack-plugin");
-const WebpackBar = require('webpackbar');
 
 const rootDir = `${__dirname}/../`
 const getFullPath = (path) => Path.resolve(rootDir, path);
@@ -54,22 +53,22 @@ module.exports = {
   },
   plugins: loadPlugins(),
   devServer: {
-    contentBase: getFullPath('src'),
+    static: {
+      directory: getFullPath('src'),
+      watch: true,
+    },
     hot: true,
     open: true,
     port: 3001,
-    progress: true,
-    stats: {
-      normal: true
-    },
-    watchContentBase: true,
+    client: {
+      logging: 'info'
+    }
   }
 }
 
 function loadPlugins() {
   let plugins = [
     new Dotenv(),
-    new WebpackBar(),
     new CleanWebpackPlugin(),
     new CopyWebpackPlugin({
       patterns: [
