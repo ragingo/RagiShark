@@ -1,4 +1,5 @@
 # dirs
+.yarn
 node_modules/
 dist
 
