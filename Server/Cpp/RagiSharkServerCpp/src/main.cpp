@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <chrono>
 #include <thread>
 #include <mutex>
@@ -19,10 +19,19 @@ int main()
 {
     std::deque<std::string> sendQueue;
 
+    std::string nic = "any";
+    // Windows版は any 非対応なので、特定のインターフェースを指定する必要がある
+    // https://tshark.dev/capture/sources/
+    #if defined(RAGII_WINDOWS)
+    nic = "6"; // 動作環境依存
+    #endif
+
     ProcessStartInfo psi;
     psi.Name = "tshark";
-    psi.Args = { "-i 5", "-T ek", "-e frame.number", "-e ip.proto", "-e ip.src", "-e ip.dst", "-e tcp.srcport", "-e tcp.dstport" };
+    psi.Args = { "-i", nic, "-T ek", "-e frame.number", "-e ip.proto", "-e ip.src", "-e ip.dst", "-e tcp.srcport", "-e tcp.dstport" };
     psi.RedirectStdOut = true;
+
+    std::cout << ragii::util::join(" ", psi.Args) << std::endl;
 
     auto proc = Process::Start(psi);
     proc->setStdOutReceivedHandler([&sendQueue] (const std::string& s) -> void {

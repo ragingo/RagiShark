@@ -31,6 +31,7 @@ namespace
         );
 
         if (!ret) {
+            std::cerr << "CreateProcess failed: " << GetLastError() << std::endl;
             return false;
         }
 

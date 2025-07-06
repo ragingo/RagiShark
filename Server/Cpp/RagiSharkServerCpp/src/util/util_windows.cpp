@@ -2,9 +2,9 @@
 
 #ifdef RAGII_WINDOWS
 
+#include <cstdint>
 #include <iostream>
 #include <wincrypt.h>
-#pragma comment(lib, "crypt32")
 
 namespace ragii::util
 {
