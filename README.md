@@ -8,11 +8,11 @@ TSharkによるキャプチャデータを送信しまくる実験
 
 ## Server
 - TShark
-- C#, dotnetcore
+- C#, .NET 9
   - 簡易(手抜き)WebSocketサーバ実装
     - 独自コマンド受信
     - データ送信
-- C++17 (今はWindows専用)
+- C++23 (今はWindows専用)
   - 簡易(手抜き)WebSocketサーバ実装
     - データ送信
 - Rust
