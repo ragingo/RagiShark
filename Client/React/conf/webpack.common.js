@@ -21,19 +21,6 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/,
-        enforce: 'pre',
-        use: [
-          {
-            loader: 'tslint-loader',
-            options: {
-              configFile: getFullPath('conf/tslint.jsonc'),
-              fix: true
-            }
-          }
-        ]
-      },
-      {
-        test: /\.tsx?$/,
         exclude: /node_modules/,
         use: [
           {
@@ -45,7 +32,17 @@ module.exports = {
         ]
       },
       { test: /\.html$/, exclude: getFullPath('src/index.html'), loader: 'html-loader' },
-      { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader'], sideEffects: true }
+      { test: /\.scss$/, use: [
+          'style-loader',
+          'css-loader',
+          {
+            loader: 'sass-loader',
+            options: {
+              implementation: require('sass'),
+              api: 'modern', // legacy JS API警告を抑制
+            },
+          },
+        ], sideEffects: true }
     ]
   },
   resolve: {

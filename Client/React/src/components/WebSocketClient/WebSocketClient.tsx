@@ -1,4 +1,5 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+/* eslint-disable no-undef */
+import { useEffect, useCallback } from 'react';
 
 export type GetIFListCommandMessageFormat = {
   type: string,
@@ -44,30 +45,26 @@ type Props = {
 export const WebSocketClient = (
     { url, socketRef, onMessageReceived }: Props
 ) => {
+  const _onMessageReceived = useCallback((e: MessageEvent) => {
+    console.log(e.data);
+    const obj = JSON.parse(e.data);
+    const newItem = obj as MessageFormat;
+    onMessageReceived(newItem);
+  }, [onMessageReceived]);
+
   useEffect(() => {
     if (socketRef.current) {
       return;
     }
     const sock = new WebSocket(url);
-    sock.onopen = e => {
+    sock.onopen = () => {
       console.log('ws opened');
     };
     sock.onmessage = e => {
       _onMessageReceived(e);
     };
     socketRef.current = sock;
-  }, []);
-
-  const _onMessageReceived = useCallback((e: MessageEvent) => {
-    console.log(e.data);
-    const obj = JSON.parse(e.data);
-    // const keys = Object.keys(obj);
-    // if (!keys.includes('layers')) {
-    //   return;
-    // }
-    const newItem = obj as MessageFormat;
-    onMessageReceived(newItem);
-  }, []);
+  }, [socketRef, url, _onMessageReceived]);
 
   return null;
 };

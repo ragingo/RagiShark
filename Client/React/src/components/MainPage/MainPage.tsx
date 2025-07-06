@@ -1,5 +1,6 @@
-import { Button, Checkbox, Input, ListItemText, MenuItem, Select, TextField } from '@material-ui/core';
-import ToggleButton from '@material-ui/lab/ToggleButton';
+/* eslint-disable no-undef */
+import { Button, Checkbox, Input, ListItemText, MenuItem, Select, TextField, SelectChangeEvent } from '@mui/material';
+import ToggleButton from '@mui/material/ToggleButton';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PacketList } from '../PacketList/PacketList';
 import { isGetIFListCommandMessage, isPacketMessage, MessageFormat, PacketMessageFormat, WebSocketClient } from '../WebSocketClient/WebSocketClient';
@@ -18,7 +19,7 @@ export const MainPage = () => {
   const socketRef = useRef<WebSocket>(null);
   const [interfaces, setInterfaces] = useState<NicInfo[]>([]);
   const [packets, setPackets] = useState<PacketMessageFormat[]>([]);
-  const [queue, _] = useState<PacketMessageFormat[]>([]);
+  const [queue] = useState<PacketMessageFormat[]>([]);
   const [isStarted, setStarted] = useState<boolean>(false);
   const [isCapturing, setCapturing] = useState<boolean>(false);
   const [captureButtonText, setCaptureButtonText] = useState<string>('start');
@@ -41,7 +42,7 @@ export const MainPage = () => {
       }
     }, RECEIVED_PACKET_QUEUE_CHECK_INTERVAL);
     return () => clearInterval(handle);
-  }, []);
+  }, [queue]);
 
   // キャプチャ状態変更時
   // 状態を変更しつつ、サーバへコマンド送信
@@ -64,7 +65,7 @@ export const MainPage = () => {
       setCaptureButtonText('pause');
       sendCommand(socketRef, 'start', `-cf ${captureFilter} -i ${interfaces.filter(x => x.checked).map(x => x.no)}`);
     }
-  }, [isStarted, isCapturing, captureFilter, interfaces]);
+  }, [isStarted, isCapturing, captureFilter, interfaces, queue]);
 
   // 受信時
   const onMessageReceived = useCallback((msg: MessageFormat) => {
@@ -77,7 +78,7 @@ export const MainPage = () => {
     if (isPacketMessage(msg)) {
       queue.push(msg);
     }
-  }, []);
+  }, [queue]);
 
   // フォーカス外れたら反映
   const onCaptureFilterChange = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
@@ -102,28 +103,24 @@ export const MainPage = () => {
   const onClearButtonClick = useCallback(() => {
     setPackets([]);
     queue.length = 0;
-  }, []);
+  }, [queue]);
 
   const onGetIFListButtonClick = useCallback(() => {
     sendCommand(socketRef, 'get if list');
   }, []);
 
-  const onIFListSelectionChanged = useCallback((e: React.ChangeEvent<{ value: NicInfo[] }>) => {
-    // 変更されてないやつしか含まれていない・・・謎
-    const unchangedItems = e.target.value;
+  const onIFListSelectionChanged = useCallback((e: SelectChangeEvent<number[]>) => {
+    const selectedNos = e.target.value as number[];
     interfaces.forEach(x => {
-      if (!unchangedItems.map(x => x.no).includes(x.no)) {
-        x.checked = !x.checked;
-      }
+      x.checked = selectedNos.includes(x.no);
     });
     setInterfaces([...interfaces]);
-
     if (isStarted) {
       const selectedIFs = interfaces.filter(x => x.checked).map(x => x.no);
       console.log(`selected interfaces: ${JSON.stringify(selectedIFs)}`);
       sendCommand(socketRef, `set if list`, selectedIFs.join(','));
     }
-  }, [interfaces, isStarted]);
+  }, [interfaces, isStarted, socketRef]);
 
   return (
     <div className='MainPage'>
@@ -132,9 +129,9 @@ export const MainPage = () => {
           <Button onClick={onGetIFListButtonClick} variant='contained'>load</Button>
         </div>
         <div className='MainPage-GetIFList'>
-          <Select onChange={onIFListSelectionChanged} multiple input={<Input />} value={interfaces} renderValue={showSelectedValues}>
+          <Select onChange={onIFListSelectionChanged} multiple input={<Input />} value={interfaces.filter(x => x.checked).map(x => x.no)} renderValue={showSelectedValues}>
             {interfaces.map(x => (
-              <MenuItem key={x.no} value={x as any}>
+              <MenuItem key={x.no} value={x.no}>
                 <Checkbox checked={x.checked} />
                 <ListItemText primary={x.name} />
               </MenuItem>
@@ -175,8 +172,6 @@ const sendCommand = (sock: React.RefObject<WebSocket>, cmd: WebSocketCommands, v
   }
 };
 
-const showSelectedValues = (values: NicInfo[]) => {
-  return values.filter(x => x.checked)
-    .map(x => x.no)
-    .join(', ');
+const showSelectedValues = (selectedNos: number[]): string => {
+  return selectedNos.join(', ');
 };

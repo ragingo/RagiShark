@@ -1,7 +1,7 @@
+@use "./components/PacketList/PacketList";
+@use "./components/MainPage/MainPage";
+
 .App {
   font-family: sans-serif;
   text-align: center;
 }
-
-@import "./components/PacketList/PacketList";
-@import "./components/MainPage/MainPage";
